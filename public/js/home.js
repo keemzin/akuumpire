@@ -63,20 +63,31 @@ function renderMatches() {
 
   matchesGrid.innerHTML = filtered.map(m => {
     const isLive = m.status === "IN_PROGRESS" || m.status === "INTERVAL" || m.status === "SET_ENDED";
+    const isFinished = m.status === "FINISHED";
+    const isWinnerA = isFinished && m.winner === "A";
+    const isWinnerB = isFinished && m.winner === "B";
+    const winnerName = isWinnerA ? m.teamA.name : (isWinnerB ? m.teamB.name : null);
+
     const statusBadge = isLive 
       ? `<span class="badge badge-live">Live</span>` 
-      : m.status === "FINISHED" 
-      ? `<span class="badge badge-gold">Final</span>` 
+      : isFinished 
+      ? `<span class="badge badge-gold">Ended</span>` 
       : `<span class="badge badge-ended">Warm-up</span>`;
 
     const teamAPlayers = m.teamA.player2 ? `${m.teamA.player1} & ${m.teamA.player2}` : m.teamA.player1;
     const teamBPlayers = m.teamB.player2 ? `${m.teamB.player1} & ${m.teamB.player2}` : m.teamB.player1;
 
+    const metaSummary = isFinished
+      ? `Final (${m.teamA.setsWon} - ${m.teamB.setsWon})`
+      : `Set ${m.currentSet} (${m.teamA.setsWon} - ${m.teamB.setsWon})`;
+
+    const formatTag = m.rules?.shortName || (m.rules?.setsToWin > 1 ? 'Bo3 to 21' : '1 Set');
+
     return `
-      <div class="match-card" data-id="${m.id}">
+      <div class="match-card ${isFinished ? 'match-ended' : ''}" data-id="${m.id}">
         <div class="match-card-header">
           <div class="court-tag">
-            <span class="court-dot"></span>
+            <span class="court-dot ${isFinished ? 'ended' : ''}"></span>
             <strong>${escapeHtml(m.court)}</strong>
             <span class="venue-sub">• ${escapeHtml(m.venue)}</span>
           </div>
@@ -85,35 +96,40 @@ function renderMatches() {
 
         <div class="match-scoreboard-preview">
           <!-- Team A -->
-          <div class="preview-team-row ${m.servingTeam === 'A' ? 'serving' : ''}">
+          <div class="preview-team-row ${isWinnerA ? 'winner-row' : ''} ${isWinnerB ? 'defeated-row' : ''} ${m.servingTeam === 'A' && isLive ? 'serving' : ''}">
             <div class="team-info-box">
-              <span class="team-code">${escapeHtml(m.teamA.name)}</span>
-              <span class="player-names" title="${escapeHtml(teamAPlayers)}">${escapeHtml(teamAPlayers)}</span>
-              ${m.servingTeam === 'A' ? '<span class="mini-shuttle" title="Serving">🏸</span>' : ''}
+              <span class="team-code ${isWinnerA ? 'winner-code' : ''}">${escapeHtml(m.teamA.name)}</span>
+              <span class="player-names ${isWinnerA ? 'winner-name' : ''}" title="${escapeHtml(teamAPlayers)}">
+                ${escapeHtml(teamAPlayers)}
+                ${isWinnerA ? '<span class="mini-trophy" title="Winner">🏆</span>' : ''}
+              </span>
+              ${m.servingTeam === 'A' && isLive ? '<span class="mini-shuttle" title="Serving">🏸</span>' : ''}
             </div>
-            <div class="team-score-num">${m.currentScore.teamA}</div>
+            <div class="team-score-num ${isWinnerA ? 'winner-score' : ''}">${m.currentScore.teamA}</div>
           </div>
 
           <!-- Team B -->
-          <div class="preview-team-row ${m.servingTeam === 'B' ? 'serving' : ''}">
+          <div class="preview-team-row ${isWinnerB ? 'winner-row' : ''} ${isWinnerA ? 'defeated-row' : ''} ${m.servingTeam === 'B' && isLive ? 'serving' : ''}">
             <div class="team-info-box">
-              <span class="team-code">${escapeHtml(m.teamB.name)}</span>
-              <span class="player-names" title="${escapeHtml(teamBPlayers)}">${escapeHtml(teamBPlayers)}</span>
-              ${m.servingTeam === 'B' ? '<span class="mini-shuttle" title="Serving">🏸</span>' : ''}
+              <span class="team-code ${isWinnerB ? 'winner-code' : ''}">${escapeHtml(m.teamB.name)}</span>
+              <span class="player-names ${isWinnerB ? 'winner-name' : ''}" title="${escapeHtml(teamBPlayers)}">
+                ${escapeHtml(teamBPlayers)}
+                ${isWinnerB ? '<span class="mini-trophy" title="Winner">🏆</span>' : ''}
+              </span>
+              ${m.servingTeam === 'B' && isLive ? '<span class="mini-shuttle" title="Serving">🏸</span>' : ''}
             </div>
-            <div class="team-score-num">${m.currentScore.teamB}</div>
+            <div class="team-score-num ${isWinnerB ? 'winner-score' : ''}">${m.currentScore.teamB}</div>
           </div>
         </div>
 
         <div class="match-card-footer">
           <div class="match-meta-info">
-            <span class="set-indicator">Set ${m.currentSet} (${m.teamA.setsWon} - ${m.teamB.setsWon})</span>
-            <span class="type-pill">${m.matchType}</span>
+            <span class="set-indicator" style="${isFinished ? 'color: var(--accent-gold); font-weight: 700;' : ''}">${metaSummary}</span>
           </div>
           <div class="card-btn-group">
-            <a href="/match/${m.id}" class="btn btn-secondary btn-sm">Watch TV</a>
-            <button class="btn btn-primary btn-sm open-umpire-pin-btn" data-id="${m.id}" data-court="${escapeHtml(m.court)}">
-              Umpire
+            <a href="/match/${m.id}" class="btn btn-secondary btn-sm">${isFinished ? 'Scoreboard' : 'Watch TV'}</a>
+            <button class="btn ${isFinished ? 'btn-secondary' : 'btn-primary'} btn-sm open-umpire-pin-btn" data-id="${m.id}" data-court="${escapeHtml(m.court)}">
+              ${isFinished ? 'Admin' : 'Umpire'}
             </button>
           </div>
         </div>

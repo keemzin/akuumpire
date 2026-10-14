@@ -14,6 +14,8 @@ export const RULE_PRESETS = {
   BWF_STANDARD: {
     id: "BWF_STANDARD",
     name: "BWF Standard (Best of 3 to 21)",
+    shortName: "Bo3 to 21",
+    label: "Best of 3 to 21",
     setsToWin: 2,
     pointsPerSet: 21,
     maxPointsCap: 30,
@@ -22,6 +24,8 @@ export const RULE_PRESETS = {
   ONE_SET_21: {
     id: "ONE_SET_21",
     name: "Single Set to 21 (Sudden Death)",
+    shortName: "1 Set to 21",
+    label: "1 Set to 21",
     setsToWin: 1,
     pointsPerSet: 21,
     maxPointsCap: 30,
@@ -30,6 +34,8 @@ export const RULE_PRESETS = {
   ONE_SET_30: {
     id: "ONE_SET_30",
     name: "Single Set to 30 (Golden Point)",
+    shortName: "1 Set to 30",
+    label: "1 Set to 30",
     setsToWin: 1,
     pointsPerSet: 30,
     maxPointsCap: 30,
@@ -38,6 +44,8 @@ export const RULE_PRESETS = {
   ONE_SET_42: {
     id: "ONE_SET_42",
     name: "Social Club Marathon (1 Set to 42)",
+    shortName: "1 Set to 42",
+    label: "1 Set to 42",
     setsToWin: 1,
     pointsPerSet: 42,
     maxPointsCap: 42,
@@ -46,6 +54,8 @@ export const RULE_PRESETS = {
   BEST_OF_3_15: {
     id: "BEST_OF_3_15",
     name: "Fast Play (Best of 3 to 15)",
+    shortName: "Bo3 to 15",
+    label: "Best of 3 to 15",
     setsToWin: 2,
     pointsPerSet: 15,
     maxPointsCap: 21,
@@ -181,7 +191,7 @@ export function getMatchIndicators(state) {
  * Apply a point to Team A or Team B according to BWF rules
  */
 export function addPoint(state, scoringTeam) {
-  if (state.status === "FINISHED") {
+  if (state.status === "FINISHED" || state.status === "SET_ENDED") {
     return state;
   }
 

@@ -202,9 +202,22 @@ function updateConsoleUI(match) {
   const matchStatus = document.getElementById("umpire-match-status");
   const pinBadge = document.getElementById("umpire-pin-tag");
 
+  const formatLabel = match.rules?.shortName || (match.rules?.setsToWin > 1 ? `Bo3 to ${match.rules?.pointsPerSet}` : `1 Set to ${match.rules?.pointsPerSet}`);
+  const setCounterText = match.rules?.setsToWin > 1 
+    ? `Set ${match.currentSet} of 3` 
+    : `1 Set (${match.rules?.pointsPerSet} pts)`;
+
+  const statusClean = match.status === "FINISHED" 
+    ? "MATCH ENDED" 
+    : match.status === "SET_ENDED" 
+    ? "SET ENDED" 
+    : match.status === "INTERVAL" 
+    ? "INTERVAL BREAK" 
+    : "IN PROGRESS";
+
   if (courtBadge) courtBadge.textContent = `${match.court} (${match.venue})`;
   if (pinBadge && adminPin) pinBadge.textContent = `PIN: ${adminPin}`;
-  if (matchStatus) matchStatus.textContent = `Set ${match.currentSet} • ${match.status.replace("_", " ")}`;
+  if (matchStatus) matchStatus.textContent = `${setCounterText} • ${formatLabel} • ${statusClean}`;
 
   // Pad A
   const padA = document.getElementById("pad-team-a");

@@ -44,11 +44,47 @@ function renderScoreboard(match) {
   const venueEl = document.getElementById("disp-venue");
   const typeEl = document.getElementById("disp-type");
   const setEl = document.getElementById("disp-current-set");
+  const setTitleEl = document.querySelector(".current-set-label .set-title");
+  const statusBadgeEl = document.getElementById("disp-status-badge");
 
+  const isFinished = match.status === "FINISHED";
+  const isWinnerA = isFinished && match.winner === "A";
+  const isWinnerB = isFinished && match.winner === "B";
+  const winnerName = isWinnerA ? match.teamA.name : (isWinnerB ? match.teamB.name : null);
+
+  const formatTag = match.rules?.label || match.rules?.shortName || (match.rules?.setsToWin > 1 ? 'Best of 3 to 21' : '1 Set');
   if (courtEl) courtEl.textContent = match.court;
   if (venueEl) venueEl.textContent = match.venue;
-  if (typeEl) typeEl.textContent = match.matchType;
-  if (setEl) setEl.textContent = match.currentSet;
+  if (typeEl) typeEl.textContent = `${match.matchType} • ${formatTag}`;
+
+  // Header status badge
+  if (statusBadgeEl) {
+    if (isFinished) {
+      statusBadgeEl.className = "badge badge-gold";
+      statusBadgeEl.textContent = "Ended";
+    } else if (match.status === "INTERVAL") {
+      statusBadgeEl.className = "badge badge-gold";
+      statusBadgeEl.textContent = "Interval";
+    } else {
+      statusBadgeEl.className = "badge badge-live";
+      statusBadgeEl.textContent = "Live";
+    }
+  }
+
+  // Center column current set
+  if (setEl) {
+    if (isFinished) {
+      setEl.textContent = "ENDED";
+      setEl.style.fontSize = "1.5rem";
+      setEl.style.color = "var(--accent-gold)";
+      if (setTitleEl) setTitleEl.textContent = "STATUS";
+    } else {
+      setEl.textContent = match.currentSet;
+      setEl.style.fontSize = "2.5rem";
+      setEl.style.color = "var(--accent-cyan)";
+      if (setTitleEl) setTitleEl.textContent = "CURRENT SET";
+    }
+  }
 
   // Team A
   const teamAName = document.getElementById("disp-team-a-name");
@@ -58,7 +94,11 @@ function renderScoreboard(match) {
   const panelA = document.getElementById("panel-team-a");
 
   const pAStr = match.teamA.player2 ? `${match.teamA.player1} / ${match.teamA.player2}` : match.teamA.player1;
-  if (teamAName) teamAName.textContent = match.teamA.name;
+  if (teamAName) {
+    teamAName.innerHTML = isWinnerA 
+      ? `${escapeHtml(match.teamA.name)} <span class="winner-stadium-badge">🏆 WINNER</span>`
+      : escapeHtml(match.teamA.name);
+  }
   if (teamAPlayers) teamAPlayers.textContent = pAStr;
 
   // Score pop animation
@@ -72,9 +112,13 @@ function renderScoreboard(match) {
     lastScoreA = match.currentScore.teamA;
   }
 
-  const isServingA = match.servingTeam === "A";
+  const isServingA = match.servingTeam === "A" && !isFinished;
   if (servingAEl) servingAEl.classList.toggle("active", isServingA);
-  if (panelA) panelA.classList.toggle("serving", isServingA);
+  if (panelA) {
+    panelA.classList.toggle("serving", isServingA);
+    panelA.classList.toggle("winner-panel", isWinnerA);
+    panelA.classList.toggle("defeated-panel", isWinnerB);
+  }
 
   // Team B
   const teamBName = document.getElementById("disp-team-b-name");
@@ -84,7 +128,11 @@ function renderScoreboard(match) {
   const panelB = document.getElementById("panel-team-b");
 
   const pBStr = match.teamB.player2 ? `${match.teamB.player1} / ${match.teamB.player2}` : match.teamB.player1;
-  if (teamBName) teamBName.textContent = match.teamB.name;
+  if (teamBName) {
+    teamBName.innerHTML = isWinnerB 
+      ? `<span class="winner-stadium-badge">🏆 WINNER</span> ${escapeHtml(match.teamB.name)}`
+      : escapeHtml(match.teamB.name);
+  }
   if (teamBPlayers) teamBPlayers.textContent = pBStr;
 
   if (scoreBEl) {
@@ -97,9 +145,13 @@ function renderScoreboard(match) {
     lastScoreB = match.currentScore.teamB;
   }
 
-  const isServingB = match.servingTeam === "B";
+  const isServingB = match.servingTeam === "B" && !isFinished;
   if (servingBEl) servingBEl.classList.toggle("active", isServingB);
-  if (panelB) panelB.classList.toggle("serving", isServingB);
+  if (panelB) {
+    panelB.classList.toggle("serving", isServingB);
+    panelB.classList.toggle("winner-panel", isWinnerB);
+    panelB.classList.toggle("defeated-panel", isWinnerA);
+  }
 
   // Sets Won Dots
   renderSetsWon("sets-won-a", match.teamA.setsWon, match.rules.setsToWin);
@@ -110,6 +162,15 @@ function renderScoreboard(match) {
 
   // Banner status
   renderStatusBanner(match);
+}
+
+function escapeHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 function renderSetsWon(containerId, count, target) {

@@ -86,7 +86,7 @@
     /* Match Cards Grid */
     .matches-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
       gap: 1.25rem;
     }
 
@@ -113,6 +113,19 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .format-micro-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-sm);
+      letter-spacing: 0.04em;
+      white-space: nowrap;
     }
 
     .court-tag {

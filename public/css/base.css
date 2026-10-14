@@ -143,6 +143,7 @@ a {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-radius: var(--radius-full);
+  white-space: nowrap;
 }
 
 .badge-live {
@@ -171,6 +172,42 @@ a {
   background: rgba(100, 116, 139, 0.2);
   color: #94a3b8;
   border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+/* Professional Sports Winner styling */
+.court-dot.ended {
+  background: var(--text-muted);
+}
+
+.preview-team-row.winner-row {
+  color: #ffffff;
+}
+
+.preview-team-row.winner-row .winner-code {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: var(--accent-gold) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.preview-team-row.winner-row .winner-name {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+.preview-team-row.winner-row .winner-score {
+  color: var(--accent-gold) !important;
+  font-weight: 800 !important;
+}
+
+.preview-team-row.defeated-row {
+  opacity: 0.55;
+}
+
+.mini-trophy {
+  font-size: 0.85rem;
+  margin-left: 0.25rem;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 @keyframes pulse-dot {
