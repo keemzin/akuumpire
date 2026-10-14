@@ -191,6 +191,21 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`🏸 ShuttleLive server running on http://localhost:${PORT}`);
+import os from "node:os";
+
+const HOST = process.env.HOST || "0.0.0.0";
+
+server.listen(PORT, HOST, () => {
+  console.log(`\n🏸 ShuttleLive server listening on ${HOST}:${PORT}`);
+  console.log(`  > Local:   http://localhost:${PORT}`);
+  
+  const nets = os.networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      if (net.family === "IPv4" && !net.internal) {
+        console.log(`  > Network (${name}): http://${net.address}:${PORT}`);
+      }
+    }
+  }
+  console.log("");
 });

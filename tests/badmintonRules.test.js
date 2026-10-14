@@ -93,6 +93,28 @@ test("enforces 30-point golden point cap (29-29 -> 30-29 wins)", () => {
   assert.equal(match.teamB.setsWon, 1);
 });
 
+test("handles 42-point social marathon with interval at 21", () => {
+  let match = createMatchState({
+    id: "match-42-pts",
+    preset: "ONE_SET_42"
+  });
+
+  // Reach interval at 21 points
+  match.currentScore.teamA = 20;
+  match = addPoint(match, "A");
+  assert.equal(match.currentScore.teamA, 21);
+  assert.equal(match.status, "INTERVAL");
+  assert.equal(match.intervalReached, true);
+
+  // Finish game at 42 points
+  match.status = "IN_PROGRESS";
+  match.currentScore.teamA = 41;
+  match = addPoint(match, "A");
+  assert.equal(match.currentScore.teamA, 42);
+  assert.equal(match.status, "FINISHED");
+  assert.equal(match.winner, "A");
+});
+
 test("reverts score and server on undo", () => {
   let match = createMatchState({ id: "match-106", startingServerTeam: "A" });
 

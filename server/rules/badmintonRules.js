@@ -35,6 +35,14 @@ export const RULE_PRESETS = {
     maxPointsCap: 30,
     intervalAt: 15
   },
+  ONE_SET_42: {
+    id: "ONE_SET_42",
+    name: "Social Club Marathon (1 Set to 42)",
+    setsToWin: 1,
+    pointsPerSet: 42,
+    maxPointsCap: 42,
+    intervalAt: 21
+  },
   BEST_OF_3_15: {
     id: "BEST_OF_3_15",
     name: "Fast Play (Best of 3 to 15)",
