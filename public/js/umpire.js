@@ -202,9 +202,10 @@ function updateConsoleUI(match) {
   const matchStatus = document.getElementById("umpire-match-status");
   const pinBadge = document.getElementById("umpire-pin-tag");
 
-  const formatLabel = match.rules?.shortName || (match.rules?.setsToWin > 1 ? `Bo3 to ${match.rules?.pointsPerSet}` : `1 Set to ${match.rules?.pointsPerSet}`);
+  const formatLabel = match.rules?.shortName || (match.rules?.setsToWin > 1 ? `Bo${match.rules.setsToWin * 2 - 1} to ${match.rules?.pointsPerSet}` : `1 Set to ${match.rules?.pointsPerSet}`);
+  const totalMaxSets = match.rules?.setsToWin > 1 ? (match.rules.setsToWin * 2 - 1) : 1;
   const setCounterText = match.rules?.setsToWin > 1 
-    ? `Set ${match.currentSet} of 3` 
+    ? `Set ${match.currentSet} of ${totalMaxSets}` 
     : `1 Set (${match.rules?.pointsPerSet} pts)`;
 
   const statusClean = match.status === "FINISHED" 

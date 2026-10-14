@@ -7,11 +7,39 @@ const emptyState = document.getElementById("empty-state");
 const liveCountEl = document.getElementById("live-count");
 
 let allMatches = [];
+let currentTab = "LIVE";
+
+function getMatchDurationMinutes(start, end) {
+  if (!start) return 15;
+  const s = new Date(start).getTime();
+  const e = end ? new Date(end).getTime() : Date.now();
+  const diffMins = Math.max(1, Math.round((e - s) / 60000));
+  return diffMins;
+}
+
+function updateTabCounts() {
+  const liveMatches = allMatches.filter(m => m.status !== "FINISHED");
+  const endedMatches = allMatches.filter(m => m.status === "FINISHED");
+
+  const tabLive = document.getElementById("tab-count-live");
+  const tabEnded = document.getElementById("tab-count-ended");
+  const tabAll = document.getElementById("tab-count-all");
+
+  if (tabLive) tabLive.textContent = liveMatches.length;
+  if (tabEnded) tabEnded.textContent = endedMatches.length;
+  if (tabAll) tabAll.textContent = allMatches.length;
+
+  if (liveCountEl) {
+    const activeCount = liveMatches.length;
+    liveCountEl.textContent = `${activeCount} Active ${activeCount === 1 ? 'Court' : 'Courts'}`;
+  }
+}
 
 async function fetchMatches() {
   try {
     const res = await fetch("/api/matches");
     allMatches = await res.json();
+    updateTabCounts();
     renderMatches();
     updateVenueFilter();
   } catch (err) {
@@ -42,20 +70,38 @@ function renderMatches() {
   const selectedVenue = filterSelect?.value || "ALL";
 
   const filtered = allMatches.filter(m => {
+    // Tab filter
+    if (currentTab === "LIVE" && m.status === "FINISHED") return false;
+    if (currentTab === "ENDED" && m.status !== "FINISHED") return false;
+
+    // Venue filter
     const matchesVenue = selectedVenue === "ALL" || m.venue === selectedVenue;
+    
+    // Search query
     const matchText = `${m.court} ${m.venue} ${m.teamA.name} ${m.teamA.player1} ${m.teamA.player2 || ""} ${m.teamB.name} ${m.teamB.player1} ${m.teamB.player2 || ""}`.toLowerCase();
     const matchesSearch = !query || matchText.includes(query);
     return matchesVenue && matchesSearch;
   });
 
-  if (liveCountEl) {
-    const activeCount = allMatches.filter(m => m.status === "IN_PROGRESS" || m.status === "INTERVAL" || m.status === "SET_ENDED").length;
-    liveCountEl.textContent = `${activeCount} Active ${activeCount === 1 ? 'Court' : 'Courts'}`;
-  }
-
   if (filtered.length === 0) {
     matchesGrid.innerHTML = "";
-    if (emptyState) emptyState.style.display = "block";
+    if (emptyState) {
+      emptyState.style.display = "block";
+      const emptyTitle = emptyState.querySelector("h3");
+      const emptyDesc = emptyState.querySelector("p");
+      if (emptyTitle && emptyDesc) {
+        if (currentTab === "LIVE") {
+          emptyTitle.textContent = "No live ongoing matches right now";
+          emptyDesc.textContent = "Courts are currently free. Register a new match to start scoring!";
+        } else if (currentTab === "ENDED") {
+          emptyTitle.textContent = "No completed matches in history yet";
+          emptyDesc.textContent = "As matches wrap up on court, their final scorecards will appear here.";
+        } else {
+          emptyTitle.textContent = "No matches found";
+          emptyDesc.textContent = "Try searching for a different court, player, or venue.";
+        }
+      }
+    }
     return;
   }
 
@@ -66,7 +112,6 @@ function renderMatches() {
     const isFinished = m.status === "FINISHED";
     const isWinnerA = isFinished && m.winner === "A";
     const isWinnerB = isFinished && m.winner === "B";
-    const winnerName = isWinnerA ? m.teamA.name : (isWinnerB ? m.teamB.name : null);
 
     const statusBadge = isLive 
       ? `<span class="badge badge-live">Live</span>` 
@@ -77,9 +122,14 @@ function renderMatches() {
     const teamAPlayers = m.teamA.player2 ? `${m.teamA.player1} & ${m.teamA.player2}` : m.teamA.player1;
     const teamBPlayers = m.teamB.player2 ? `${m.teamB.player1} & ${m.teamB.player2}` : m.teamB.player1;
 
+    const durationMins = getMatchDurationMinutes(m.createdAt, m.finishedAt || m.updatedAt);
     const metaSummary = isFinished
-      ? `Final (${m.teamA.setsWon} - ${m.teamB.setsWon})`
+      ? `Final (${m.teamA.setsWon} - ${m.teamB.setsWon}) • ⏱️ ${durationMins}m`
       : `Set ${m.currentSet} (${m.teamA.setsWon} - ${m.teamB.setsWon})`;
+
+    const setsBreakdown = isFinished && m.setsHistory && m.setsHistory.length > 0
+      ? `<div class="history-sets-row">${m.setsHistory.map(s => `<span>S${s.set}: <strong>${s.teamA}-${s.teamB}</strong></span>`).join(' • ')}</div>`
+      : '';
 
     const formatTag = m.rules?.shortName || (m.rules?.setsToWin > 1 ? 'Bo3 to 21' : '1 Set');
 
@@ -123,8 +173,9 @@ function renderMatches() {
         </div>
 
         <div class="match-card-footer">
-          <div class="match-meta-info">
+          <div class="match-meta-info" style="display: flex; flex-direction: column; gap: 0.25rem;">
             <span class="set-indicator" style="${isFinished ? 'color: var(--accent-gold); font-weight: 700;' : ''}">${metaSummary}</span>
+            ${setsBreakdown}
           </div>
           <div class="card-btn-group">
             <a href="/match/${m.id}" class="btn btn-secondary btn-sm">${isFinished ? 'Scoreboard' : 'Watch TV'}</a>
@@ -187,6 +238,7 @@ function escapeHtml(str) {
 if (socket) {
   socket.on("matches:list_updated", (updatedList) => {
     allMatches = updatedList;
+    updateTabCounts();
     renderMatches();
     updateVenueFilter();
   });
@@ -195,6 +247,17 @@ if (socket) {
 // Modal handling
 document.addEventListener("DOMContentLoaded", () => {
   fetchMatches();
+
+  // Tab switching (Live vs Past Results vs All)
+  const tabBtns = document.querySelectorAll(".tab-pill-btn");
+  tabBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      tabBtns.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentTab = btn.dataset.tab;
+      renderMatches();
+    });
+  });
 
   if (searchInput) searchInput.addEventListener("input", renderMatches);
   if (filterSelect) filterSelect.addEventListener("change", renderMatches);

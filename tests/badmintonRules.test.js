@@ -93,10 +93,16 @@ test("enforces 30-point golden point cap (29-29 -> 30-29 wins)", () => {
   assert.equal(match.teamB.setsWon, 1);
 });
 
-test("handles 42-point social marathon with interval at 21", () => {
+test("handles 42-point social marathon via custom rules with interval at 21", () => {
   let match = createMatchState({
     id: "match-42-pts",
-    preset: "ONE_SET_42"
+    preset: "CUSTOM",
+    customRules: {
+      pointsPerSet: 42,
+      setsToWin: 1,
+      hasDeuce: false,
+      intervalAt: 21
+    }
   });
 
   // Reach interval at 21 points
@@ -150,4 +156,30 @@ test("completes match when a team wins 2 sets (Best of 3)", () => {
   assert.equal(match.status, "FINISHED");
   assert.equal(match.winner, "A");
   assert.equal(match.teamA.setsWon, 2);
+});
+
+test("supports custom match rules (Single set to 15, sudden death)", () => {
+  let match = createMatchState({
+    id: "match-custom-15",
+    preset: "CUSTOM",
+    customRules: {
+      pointsPerSet: 15,
+      setsToWin: 1,
+      hasDeuce: false,
+      intervalAt: 8
+    }
+  });
+
+  assert.equal(match.rules.pointsPerSet, 15);
+  assert.equal(match.rules.hasDeuce, false);
+
+  // 14-14 (No deuce) -> 15-14 wins immediately
+  match.currentScore.teamA = 14;
+  match.currentScore.teamB = 14;
+  match = addPoint(match, "A");
+
+  assert.equal(match.currentScore.teamA, 15);
+  assert.equal(match.status, "FINISHED");
+  assert.equal(match.winner, "A");
+  assert.ok(match.finishedAt);
 });

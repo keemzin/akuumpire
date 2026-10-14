@@ -186,11 +186,60 @@
             <label class="form-label" for="rule-preset">Scoring System</label>
             <select id="rule-preset" class="form-select">
               <option value="BWF_STANDARD" selected>BWF Standard (Best of 3 to 21)</option>
-              <option value="ONE_SET_42">Social Club Marathon (1 Set to 42)</option>
               <option value="ONE_SET_30">Single Set to 30 (Golden Point)</option>
               <option value="ONE_SET_21">Single Set to 21 (Sudden Death)</option>
               <option value="BEST_OF_3_15">Fast Play (Best of 3 to 15)</option>
+              <option value="CUSTOM">⚙️ Custom Rules (Build your own)...</option>
             </select>
+          </div>
+        </div>
+
+        <!-- Expandable Custom Rules Panel -->
+        <div id="custom-rules-panel" style="display: none; background: var(--bg-surface); border: 1px dashed var(--accent-cyan); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.25rem;">
+          <div style="font-weight: 700; color: var(--accent-cyan); margin-bottom: 0.75rem; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
+            <span>⚙️</span>
+            <span>Custom Scoring Rules Configuration</span>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label" for="custom-points">Target Points to Win a Set</label>
+              <input type="number" id="custom-points" class="form-input" min="5" max="100" value="21" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="custom-interval">Interval Break at Point</label>
+              <input type="number" id="custom-interval" class="form-input" min="1" max="50" value="11" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Match Sets Format</label>
+            <div class="radio-pill-group">
+              <label>
+                <input type="radio" name="custom-sets" value="1" />
+                <span>1 Set Only (Sprint)</span>
+              </label>
+              <label>
+                <input type="radio" name="custom-sets" value="2" checked />
+                <span>Best of 3 Sets</span>
+              </label>
+              <label>
+                <input type="radio" name="custom-sets" value="3" />
+                <span>Best of 5 Sets</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="grid-2" style="align-items: center;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.9rem; font-weight: 600;">
+                <input type="checkbox" id="custom-deuce" checked style="width: 18px; height: 18px; accent-color: var(--accent-lime);" />
+                <span>Enable Deuce (Must lead by 2 points)</span>
+              </label>
+            </div>
+            <div class="form-group" id="max-cap-group" style="margin-bottom: 0;">
+              <label class="form-label" for="custom-cap">Sudden-Death Max Cap</label>
+              <input type="number" id="custom-cap" class="form-input" min="5" max="120" value="30" />
+            </div>
           </div>
         </div>
 

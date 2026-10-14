@@ -17,6 +17,35 @@ if (matchTypeSelect) {
   });
 }
 
+// Custom rules panel toggle
+const rulePresetSelect = document.getElementById("rule-preset");
+const customRulesPanel = document.getElementById("custom-rules-panel");
+const customPointsInput = document.getElementById("custom-points");
+const customIntervalInput = document.getElementById("custom-interval");
+const customCapInput = document.getElementById("custom-cap");
+const customDeuceCheck = document.getElementById("custom-deuce");
+const maxCapGroup = document.getElementById("max-cap-group");
+
+if (rulePresetSelect && customRulesPanel) {
+  rulePresetSelect.addEventListener("change", () => {
+    customRulesPanel.style.display = rulePresetSelect.value === "CUSTOM" ? "block" : "none";
+  });
+}
+
+if (customPointsInput && customIntervalInput) {
+  customPointsInput.addEventListener("input", () => {
+    const pts = parseInt(customPointsInput.value, 10) || 21;
+    customIntervalInput.value = Math.max(1, Math.floor(pts / 2));
+    if (customCapInput) customCapInput.value = pts + 9;
+  });
+}
+
+if (customDeuceCheck && maxCapGroup) {
+  customDeuceCheck.addEventListener("change", () => {
+    maxCapGroup.style.display = customDeuceCheck.checked ? "block" : "none";
+  });
+}
+
 if (form) {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -26,11 +55,12 @@ if (form) {
       submitBtn.textContent = "Creating Court...";
     }
 
+    const presetVal = document.getElementById("rule-preset").value;
     const payload = {
       venue: document.getElementById("venue").value.trim() || "Arena Hall",
       court: document.getElementById("court").value.trim() || "Court 1",
       matchType: matchTypeSelect.value,
-      preset: document.getElementById("rule-preset").value,
+      preset: presetVal,
       
       teamAName: document.getElementById("team-a-name").value.trim() || "Team A",
       teamAPlayer1: document.getElementById("team-a-player-1").value.trim() || "Player 1",
@@ -43,6 +73,16 @@ if (form) {
       startingServerTeam: document.querySelector('input[name="starting-server"]:checked')?.value || "A",
       customPin: document.getElementById("custom-pin")?.value.trim() || null
     };
+
+    if (presetVal === "CUSTOM") {
+      payload.customRules = {
+        pointsPerSet: parseInt(customPointsInput.value, 10) || 21,
+        setsToWin: parseInt(document.querySelector('input[name="custom-sets"]:checked')?.value, 10) || 2,
+        hasDeuce: customDeuceCheck ? customDeuceCheck.checked : true,
+        maxPointsCap: parseInt(customCapInput.value, 10) || 30,
+        intervalAt: parseInt(customIntervalInput.value, 10) || 11
+      };
+    }
 
     try {
       const res = await fetch("/api/matches", {

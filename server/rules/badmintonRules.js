@@ -41,16 +41,6 @@ export const RULE_PRESETS = {
     maxPointsCap: 30,
     intervalAt: 15
   },
-  ONE_SET_42: {
-    id: "ONE_SET_42",
-    name: "Social Club Marathon (1 Set to 42)",
-    shortName: "1 Set to 42",
-    label: "1 Set to 42",
-    setsToWin: 1,
-    pointsPerSet: 42,
-    maxPointsCap: 42,
-    intervalAt: 21
-  },
   BEST_OF_3_15: {
     id: "BEST_OF_3_15",
     name: "Fast Play (Best of 3 to 15)",
@@ -68,7 +58,33 @@ export const RULE_PRESETS = {
  */
 export function createMatchState(config) {
   const presetKey = config.preset || "BWF_STANDARD";
-  const rules = RULE_PRESETS[presetKey] || RULE_PRESETS.BWF_STANDARD;
+  let rules;
+
+  if (presetKey === "CUSTOM" && config.customRules) {
+    const pts = Math.max(5, Math.min(100, parseInt(config.customRules.pointsPerSet, 10) || 21));
+    const sets = Math.max(1, Math.min(5, parseInt(config.customRules.setsToWin, 10) || 2));
+    const hasDeuce = config.customRules.hasDeuce !== false;
+    const maxCap = hasDeuce 
+      ? Math.max(pts, parseInt(config.customRules.maxPointsCap, 10) || (pts + 9))
+      : pts;
+    const intervalAt = Math.max(1, parseInt(config.customRules.intervalAt, 10) || Math.floor(pts / 2));
+    const setsLabel = sets === 1 ? "1 Set" : `Bo${sets * 2 - 1}`;
+
+    rules = {
+      id: "CUSTOM",
+      name: `Custom (${setsLabel} to ${pts})`,
+      shortName: `${setsLabel} to ${pts}`,
+      label: `Custom (${setsLabel} to ${pts})`,
+      setsToWin: sets,
+      pointsPerSet: pts,
+      maxPointsCap: maxCap,
+      intervalAt,
+      hasDeuce
+    };
+  } else {
+    rules = RULE_PRESETS[presetKey] || RULE_PRESETS.BWF_STANDARD;
+  }
+
   const isDoubles = ["MD", "WD", "XD"].includes(config.matchType);
 
   const teamA = {
@@ -261,12 +277,22 @@ export function addPoint(state, scoringTeam) {
   const scoreB = state.currentScore.teamB;
   const target = state.rules.pointsPerSet;
   const maxCap = state.rules.maxPointsCap;
+  const hasDeuce = state.rules.hasDeuce !== false;
 
   let setWinner = null;
-  if ((scoreA >= target && scoreA - scoreB >= 2) || scoreA === maxCap) {
-    setWinner = "A";
-  } else if ((scoreB >= target && scoreB - scoreA >= 2) || scoreB === maxCap) {
-    setWinner = "B";
+  if (hasDeuce) {
+    if ((scoreA >= target && scoreA - scoreB >= 2) || scoreA === maxCap) {
+      setWinner = "A";
+    } else if ((scoreB >= target && scoreB - scoreA >= 2) || scoreB === maxCap) {
+      setWinner = "B";
+    }
+  } else {
+    // Sudden death / no deuce
+    if (scoreA >= target) {
+      setWinner = "A";
+    } else if (scoreB >= target) {
+      setWinner = "B";
+    }
   }
 
   if (setWinner) {
@@ -284,9 +310,11 @@ export function addPoint(state, scoringTeam) {
     if (state.teamA.setsWon >= state.rules.setsToWin) {
       state.status = "FINISHED";
       state.winner = "A";
+      state.finishedAt = new Date().toISOString();
     } else if (state.teamB.setsWon >= state.rules.setsToWin) {
       state.status = "FINISHED";
       state.winner = "B";
+      state.finishedAt = new Date().toISOString();
     } else {
       // Set ended, next set ready
       state.status = "SET_ENDED";
