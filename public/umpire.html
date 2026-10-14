@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Umpire Controller — ShuttleLive</title>
+  <meta name="description" content="Touch-optimized mobile umpire scoring pad for live badminton matches.">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/umpire.css">
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="navbar">
+    <a href="/" class="brand">
+      <div class="brand-icon">🏸</div>
+      <span>Shuttle<span style="color: var(--accent-lime);">Live</span></span>
+    </a>
+    <div class="nav-actions">
+      <a href="#" id="view-scoreboard-link" class="btn btn-secondary">
+        <span>📺 Scoreboard View</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="umpire-container">
+      <!-- Umpire Header -->
+      <div class="umpire-header">
+        <div>
+          <div class="umpire-court-badge" id="umpire-court-title">Court Loading...</div>
+          <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem;" id="umpire-match-status">
+            Set 1 • IN PROGRESS
+          </div>
+        </div>
+        <div class="umpire-auth-tag">
+          <span>🔒 Authorized</span>
+          <span id="umpire-pin-tag" style="background: rgba(255, 255, 255, 0.08); padding: 0.2rem 0.5rem; border-radius: var(--radius-sm); font-family: var(--font-score);"></span>
+        </div>
+      </div>
+
+      <!-- Dual Scoring Big Tap Areas -->
+      <div class="score-pads-grid">
+        <!-- Team A Tap Area -->
+        <div class="score-pad-btn side-a" id="pad-team-a" role="button" aria-label="Add Point Team A">
+          <div class="pad-team-name" id="pad-team-a-name">Team A</div>
+          <div class="pad-player-sub" id="pad-team-a-sub">Player 1</div>
+          <div class="pad-score-val" id="pad-score-a">0</div>
+          <div class="pad-tap-hint">
+            <span>+1 Point</span>
+          </div>
+        </div>
+
+        <!-- Team B Tap Area -->
+        <div class="score-pad-btn side-b" id="pad-team-b" role="button" aria-label="Add Point Team B">
+          <div class="pad-team-name" id="pad-team-b-name">Team B</div>
+          <div class="pad-player-sub" id="pad-team-b-sub">Player 2</div>
+          <div class="pad-score-val" id="pad-score-b">0</div>
+          <div class="pad-tap-hint">
+            <span>+1 Point</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Court Service Rotation Visualizer -->
+      <div class="court-diagram-card">
+        <div class="court-diagram-title">
+          <span>🏸 BWF Service Court Rotation</span>
+          <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">Even = Right Box | Odd = Left Box</span>
+        </div>
+        <div class="badminton-court">
+          <!-- Left side team -->
+          <div class="court-side left-side">
+            <div class="service-box" id="court-box-left">Left Box (Odd)</div>
+            <div class="service-box" id="court-box-right">Right Box (Even)</div>
+          </div>
+          <!-- Right side team -->
+          <div class="court-side right-side">
+            <div class="service-box" id="court-box-opp-left">Left Box (Odd)</div>
+            <div class="service-box" id="court-box-opp-right">Right Box (Even)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Toolbar -->
+      <div class="umpire-toolbar">
+        <button class="control-btn btn-undo" id="btn-undo" title="Revert last point">
+          <span style="font-size: 1.25rem;">↩</span>
+          <span>Undo Point</span>
+        </button>
+
+        <button class="control-btn" id="btn-switch-serve" title="Override server">
+          <span style="font-size: 1.25rem;">🔄</span>
+          <span>Switch Server</span>
+        </button>
+
+        <button class="control-btn" id="btn-swap-ends" title="Swap court sides">
+          <span style="font-size: 1.25rem;">⇄</span>
+          <span>Swap Ends</span>
+        </button>
+
+        <button class="control-btn" id="btn-resume-interval" style="display: none; background: var(--accent-purple); color: #ffffff;">
+          <span style="font-size: 1.25rem;">▶</span>
+          <span>End Interval Break</span>
+        </button>
+
+        <button class="control-btn btn-next-set" id="btn-next-set" style="display: none;">
+          <span style="font-size: 1.25rem;">⭐</span>
+          <span>Start Next Set</span>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Auth Modal (shown if PIN required) -->
+  <div class="modal-backdrop" id="auth-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">Enter Match PIN</h3>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+        Enter the 4-digit PIN for this match to activate the umpire scoring controls.
+      </p>
+      <form id="auth-form">
+        <div class="form-group">
+          <input 
+            type="password" 
+            id="auth-pin-input" 
+            class="form-input" 
+            maxlength="6" 
+            placeholder="e.g. 1234" 
+            required 
+            style="font-size: 1.6rem; text-align: center; letter-spacing: 0.3em; font-family: var(--font-score);"
+          />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          Authorize Controller
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="/js/umpire.js"></script>
+</body>
+</html>

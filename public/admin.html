@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register Match & Admin PIN — ShuttleLive</title>
+  <meta name="description" content="Register a badminton match for free. Auto-generates a secure match PIN and real-time live links.">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <style>
+    .admin-form-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-xl);
+      padding: 2.25rem;
+      max-width: 760px;
+      margin: 0 auto;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .form-section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 650px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+      .admin-form-card {
+        padding: 1.5rem;
+      }
+    }
+
+    .team-config-block {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+    }
+
+    .team-config-block.team-a {
+      border-top: 3px solid var(--accent-lime);
+    }
+
+    .team-config-block.team-b {
+      border-top: 3px solid var(--accent-cyan);
+    }
+
+    .radio-pill-group {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .radio-pill-group label {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      padding: 0.65rem;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all var(--transition-fast);
+    }
+
+    .radio-pill-group input[type="radio"] {
+      display: none;
+    }
+
+    .radio-pill-group input[type="radio"]:checked + span {
+      color: var(--accent-lime);
+    }
+
+    .radio-pill-group label:has(input[type="radio"]:checked) {
+      border-color: var(--accent-lime);
+      background: rgba(34, 197, 94, 0.1);
+    }
+
+    /* Modal for PIN celebration */
+    .pin-callout-box {
+      background: rgba(34, 197, 94, 0.1);
+      border: 2px dashed var(--accent-lime);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      text-align: center;
+      margin: 1.25rem 0;
+    }
+
+    .pin-big-text {
+      font-family: var(--font-score);
+      font-size: 3.5rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 0.2em;
+      text-shadow: 0 0 25px var(--accent-lime-glow);
+    }
+
+    .link-copy-box {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.35rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <header class="navbar">
+    <a href="/" class="brand">
+      <div class="brand-icon">🏸</div>
+      <span>Shuttle<span style="color: var(--accent-lime);">Live</span></span>
+    </a>
+    <div class="nav-actions">
+      <a href="/" class="btn btn-ghost">
+        <span>← Back to Live Courts</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="container">
+    <div style="text-align: center; margin-bottom: 2rem;">
+      <h1 style="font-size: 2.25rem; font-weight: 800; margin-bottom: 0.5rem;">Register New Match</h1>
+      <p style="color: var(--text-secondary); max-width: 550px; margin: 0 auto;">
+        Free and open to everyone. Fill in the court & players to generate your private Umpire PIN and live spectator TV link.
+      </p>
+    </div>
+
+    <div class="admin-form-card">
+      <form id="create-match-form">
+        <!-- Court & Location -->
+        <div class="form-section-title">
+          <span>📍</span>
+          <span>Court & Venue</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="venue">Venue / Hall Name</label>
+            <input type="text" id="venue" class="form-input" placeholder="e.g. Pioneer Badminton Arena" value="Pioneer Sports Hub" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="court">Court Number / Name</label>
+            <input type="text" id="court" class="form-input" placeholder="e.g. Court 3" value="Court 3" required />
+          </div>
+        </div>
+
+        <!-- Format & Category -->
+        <div class="form-section-title" style="margin-top: 1rem;">
+          <span>⚙️</span>
+          <span>Match Category & Rules</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="match-type">Category</label>
+            <select id="match-type" class="form-select">
+              <option value="MS">Men's Singles (MS)</option>
+              <option value="WS">Women's Singles (WS)</option>
+              <option value="MD" selected>Men's Doubles (MD)</option>
+              <option value="WD">Women's Doubles (WD)</option>
+              <option value="XD">Mixed Doubles (XD)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="rule-preset">Scoring System</label>
+            <select id="rule-preset" class="form-select">
+              <option value="BWF_STANDARD" selected>BWF Standard (Best of 3 to 21)</option>
+              <option value="ONE_SET_21">Single Set to 21 (Sudden Death)</option>
+              <option value="ONE_SET_30">Single Set to 30 (Golden Point)</option>
+              <option value="BEST_OF_3_15">Fast Play (Best of 3 to 15)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Participants Configuration -->
+        <div class="form-section-title" style="margin-top: 1rem;">
+          <span>👥</span>
+          <span>Participants (Who vs Who)</span>
+        </div>
+
+        <div class="grid-2" style="margin-bottom: 1.25rem;">
+          <!-- Team A -->
+          <div class="team-config-block team-a">
+            <div style="font-weight: 700; color: var(--accent-lime); margin-bottom: 0.75rem;">Team / Player A</div>
+            <div class="form-group">
+              <label class="form-label" for="team-a-name">Team / Club Tag</label>
+              <input type="text" id="team-a-name" class="form-input" placeholder="e.g. Red Tigers / MAS" value="Tigers" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="team-a-player-1">Player 1</label>
+              <input type="text" id="team-a-player-1" class="form-input" placeholder="e.g. Alex Tan" value="Alex Tan" required />
+            </div>
+            <div class="form-group doubles-only" style="display: block;">
+              <label class="form-label" for="team-a-player-2">Player 2 (Doubles)</label>
+              <input type="text" id="team-a-player-2" class="form-input" placeholder="e.g. Kenji Sato" value="Kenji Sato" />
+            </div>
+          </div>
+
+          <!-- Team B -->
+          <div class="team-config-block team-b">
+            <div style="font-weight: 700; color: var(--accent-cyan); margin-bottom: 0.75rem;">Team / Player B</div>
+            <div class="form-group">
+              <label class="form-label" for="team-b-name">Team / Club Tag</label>
+              <input type="text" id="team-b-name" class="form-input" placeholder="e.g. Blue Falcons / SGP" value="Falcons" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="team-b-player-1">Player 1</label>
+              <input type="text" id="team-b-player-1" class="form-input" placeholder="e.g. David Lim" value="David Lim" required />
+            </div>
+            <div class="form-group doubles-only" style="display: block;">
+              <label class="form-label" for="team-b-player-2">Player 2 (Doubles)</label>
+              <input type="text" id="team-b-player-2" class="form-input" placeholder="e.g. Marcus Ray" value="Marcus Ray" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Initial Serving Team & PIN -->
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Starting Server</label>
+            <div class="radio-pill-group">
+              <label>
+                <input type="radio" name="starting-server" value="A" checked />
+                <span>Team A Serves First</span>
+              </label>
+              <label>
+                <input type="radio" name="starting-server" value="B" />
+                <span>Team B Serves First</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="custom-pin">Umpire 4-Digit PIN (Optional)</label>
+            <input 
+              type="text" 
+              id="custom-pin" 
+              class="form-input" 
+              maxlength="4" 
+              pattern="\d{4}" 
+              placeholder="Leave blank to auto-generate" 
+            />
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.9rem; font-size: 1.05rem; margin-top: 1rem;">
+          🏸 Start Match & Generate Umpire PIN
+        </button>
+      </form>
+    </div>
+  </main>
+
+  <!-- Match Created Success Modal -->
+  <div class="modal-backdrop" id="success-modal">
+    <div class="modal-box" style="max-width: 520px;">
+      <div style="text-align: center;">
+        <div style="font-size: 2.75rem; margin-bottom: 0.5rem;">🎉</div>
+        <h2 style="font-size: 1.5rem; font-weight: 800;">Match Created Successfully!</h2>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">
+          Anyone on court can control points with the PIN below.
+        </p>
+      </div>
+
+      <div class="pin-callout-box">
+        <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.1em;">
+          Your 4-Digit Umpire PIN
+        </div>
+        <div class="pin-big-text" id="display-pin">----</div>
+        <div style="font-size: 0.8rem; color: var(--accent-lime);">
+          ✓ Automatically saved on this browser
+        </div>
+      </div>
+
+      <!-- Links -->
+      <div style="display: flex; flex-direction: column; gap: 0.85rem; margin-bottom: 1.5rem;">
+        <div>
+          <label class="form-label" style="font-size: 0.8rem;">📺 Spectator / TV Scoreboard URL</label>
+          <div class="link-copy-box">
+            <input type="text" id="spectator-link" class="form-input" readonly style="font-size: 0.85rem;" />
+            <button class="btn btn-secondary copy-btn" data-target="spectator-link">Copy</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label" style="font-size: 0.8rem;">📱 Direct Umpire Controller Link (Secret Token)</label>
+          <div class="link-copy-box">
+            <input type="text" id="umpire-link" class="form-input" readonly style="font-size: 0.85rem;" />
+            <button class="btn btn-secondary copy-btn" data-target="umpire-link">Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem;">
+        <a id="go-spectator-btn" href="#" class="btn btn-secondary" style="flex: 1;">View TV Scoreboard</a>
+        <a id="go-umpire-btn" href="#" class="btn btn-primary" style="flex: 1;">Go to Umpire Pad</a>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/js/admin.js"></script>
+</body>
+</html>

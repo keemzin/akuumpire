@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Match Scoreboard — ShuttleLive</title>
+  <meta name="description" content="Official BWF stadium-grade live badminton scoreboard display. Real-time updates with TV mode.">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/scoreboard.css">
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="navbar">
+    <a href="/" class="brand">
+      <div class="brand-icon">🏸</div>
+      <span>Shuttle<span style="color: var(--accent-lime);">Live</span></span>
+    </a>
+    <div class="nav-actions">
+      <button class="btn btn-secondary" id="share-btn">
+        <span>📲 QR Share</span>
+      </button>
+      <button class="btn btn-secondary" id="fullscreen-btn">
+        <span>⛶ TV Mode</span>
+      </button>
+      <button class="btn btn-primary" id="umpire-auth-btn">
+        <span>🔒 Umpire Scorer</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="scoreboard-stage">
+      <!-- Top info bar -->
+      <div class="scoreboard-top-bar">
+        <div class="match-venue-pill">
+          <span class="court-title" id="disp-court">Court</span>
+          <span>•</span>
+          <span id="disp-venue">Venue</span>
+          <span>•</span>
+          <span class="badge badge-live">Live</span>
+        </div>
+        <div>
+          <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;" id="disp-type">Category</span>
+        </div>
+      </div>
+
+      <!-- Game Point / Match Point / Interval Banner -->
+      <div class="status-banner" id="status-banner"></div>
+
+      <!-- Main Stadium LED Display -->
+      <div class="stadium-display">
+        <div class="court-sides-container">
+          <!-- Team A Panel -->
+          <div class="team-panel" id="panel-team-a">
+            <div>
+              <div class="team-meta">
+                <span class="team-country-tag" id="disp-team-a-name">TEAM A</span>
+              </div>
+              <div class="team-names" id="disp-team-a-players">Player 1</div>
+              <div class="serving-badge" id="serving-a-indicator">
+                <span class="shuttle-icon">🏸</span>
+                <span>Serving</span>
+              </div>
+            </div>
+
+            <div class="score-box">
+              <div class="score-digit" id="disp-score-a">0</div>
+            </div>
+
+            <div>
+              <div class="sets-indicator">
+                <span>Sets:</span>
+                <div id="sets-won-a" style="display: flex; gap: 0.35rem;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Center Set & History Column -->
+          <div class="center-column">
+            <div class="current-set-label">
+              <div class="set-title">Current Set</div>
+              <div class="set-num" id="disp-current-set">1</div>
+            </div>
+
+            <div style="width: 100%;">
+              <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); text-align: center; margin-bottom: 0.4rem; letter-spacing: 0.05em; font-weight: 700;">
+                Previous Sets
+              </div>
+              <div class="sets-history-list" id="sets-history-container">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Team B Panel -->
+          <div class="team-panel" id="panel-team-b" style="text-align: right; align-items: flex-end;">
+            <div style="display: flex; flex-direction: column; align-items: flex-end;">
+              <div class="team-meta">
+                <span class="team-country-tag" id="disp-team-b-name">TEAM B</span>
+              </div>
+              <div class="team-names" id="disp-team-b-players">Player 2</div>
+              <div class="serving-badge" id="serving-b-indicator">
+                <span class="shuttle-icon">🏸</span>
+                <span>Serving</span>
+              </div>
+            </div>
+
+            <div class="score-box">
+              <div class="score-digit" id="disp-score-b">0</div>
+            </div>
+
+            <div>
+              <div class="sets-indicator" style="justify-content: flex-end;">
+                <span>Sets:</span>
+                <div id="sets-won-b" style="display: flex; gap: 0.35rem;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick action helper footer -->
+      <div style="display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: 0.85rem; padding-top: 0.5rem;" class="match-actions-bar">
+        <span>⚡ Synchronized in real-time with official BWF scoring rules.</span>
+        <a href="/" style="color: var(--text-secondary); text-decoration: underline;">Browse Other Courts</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Umpire PIN Modal -->
+  <div class="modal-backdrop" id="pin-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">Enter Match PIN</h3>
+        <button class="close-btn" id="close-pin-modal">&times;</button>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+        Enter the 4-digit PIN generated when this court was created to take over scoring.
+      </p>
+      <form id="pin-form">
+        <div class="form-group">
+          <input 
+            type="password" 
+            id="pin-input" 
+            class="form-input" 
+            maxlength="6" 
+            placeholder="e.g. 1234" 
+            required 
+            style="font-size: 1.6rem; text-align: center; letter-spacing: 0.3em; font-family: var(--font-score);"
+          />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+          Unlock Umpire Controls
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Share & QR Modal -->
+  <div class="modal-backdrop" id="share-modal">
+    <div class="modal-box" style="text-align: center;">
+      <div class="modal-header">
+        <h3 class="modal-title">Share Scoreboard</h3>
+        <button class="close-btn" id="close-share-modal">&times;</button>
+      </div>
+
+      <div id="qr-container" style="margin: 1.25rem 0;"></div>
+
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+        Spectators in the hall can scan this QR code to view live scores on their phones.
+      </p>
+
+      <div style="display: flex; gap: 0.5rem;">
+        <input type="text" id="share-url-input" class="form-input" readonly style="font-size: 0.85rem;" />
+        <button class="btn btn-primary" id="copy-share-url">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="/js/match.js"></script>
+</body>
+</html>

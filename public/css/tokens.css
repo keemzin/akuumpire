@@ -1,0 +1,52 @@
+/* Design Tokens - ShuttleLive Tournament System */
+:root {
+  /* Colors */
+  --bg-deep: #07090e;
+  --bg-card: #0f141f;
+  --bg-card-hover: #161e2e;
+  --bg-surface: #182234;
+  --bg-elevated: #1f2c42;
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.16);
+  --border-glow: rgba(34, 197, 94, 0.35);
+
+  --accent-lime: #22c55e;
+  --accent-lime-glow: rgba(34, 197, 94, 0.25);
+  --accent-cyan: #06b6d4;
+  --accent-gold: #f59e0b;
+  --accent-gold-glow: rgba(245, 158, 11, 0.3);
+  --accent-crimson: #ef4444;
+  --accent-purple: #8b5cf6;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-dim: #475569;
+
+  /* Court specific */
+  --court-green: #059669;
+  --court-line: rgba(255, 255, 255, 0.85);
+
+  /* Typography */
+  --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-score: 'Chakra Petch', 'JetBrains Mono', monospace;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.6);
+  --shadow-glow-lime: 0 0 24px rgba(34, 197, 94, 0.35);
+  --shadow-glow-gold: 0 0 24px rgba(245, 158, 11, 0.4);
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-smooth: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}

@@ -1,0 +1,368 @@
+/* BWF Tournament Stadium Scoreboard CSS */
+
+.scoreboard-stage {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Header bar above scoreboard */
+.scoreboard-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+.match-venue-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg-card);
+  padding: 0.4rem 1rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.court-title {
+  color: var(--accent-lime);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.match-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Banner for Game / Match point / Interval */
+.status-banner {
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: none;
+  animation: pulse-banner 2s infinite ease-in-out;
+}
+
+.status-banner.active {
+  display: block;
+}
+
+.status-banner.match-point {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.4), rgba(245, 158, 11, 0.2));
+  border: 1px solid var(--accent-gold);
+  color: #fef08a;
+  box-shadow: var(--shadow-glow-gold);
+}
+
+.status-banner.game-point {
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.2), rgba(6, 182, 212, 0.4), rgba(6, 182, 212, 0.2));
+  border: 1px solid var(--accent-cyan);
+  color: #cffafe;
+}
+
+.status-banner.interval {
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.4), rgba(139, 92, 246, 0.2));
+  border: 1px solid var(--accent-purple);
+  color: #e9d5ff;
+}
+
+.status-banner.deuce {
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.4), rgba(239, 68, 68, 0.2));
+  border: 1px solid var(--accent-crimson);
+  color: #fca5a5;
+}
+
+.status-banner.finished {
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.4), rgba(34, 197, 94, 0.2));
+  border: 1px solid var(--accent-lime);
+  color: #86efac;
+  box-shadow: var(--shadow-glow-lime);
+}
+
+@keyframes pulse-banner {
+  0%, 100% { opacity: 0.95; }
+  50% { opacity: 0.7; }
+}
+
+/* Main LED Stadium Display */
+.stadium-display {
+  background: radial-gradient(circle at 50% 50%, #151c2c 0%, #0c1017 100%);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg), 0 0 40px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+  position: relative;
+}
+
+.stadium-display::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-lime), var(--accent-cyan), transparent);
+}
+
+/* Court Sides Grid */
+.court-sides-container {
+  display: grid;
+  grid-template-columns: 1fr 140px 1fr;
+  align-items: stretch;
+  min-height: 380px;
+}
+
+@media (max-width: 850px) {
+  .court-sides-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Team Panel */
+.team-panel {
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  transition: background var(--transition-smooth);
+}
+
+.team-panel.serving {
+  background: radial-gradient(circle at center, rgba(34, 197, 94, 0.08), transparent 70%);
+}
+
+.team-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.team-country-tag {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.06em;
+}
+
+.team-names {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.player-secondary {
+  font-size: 1.4rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* Serving Indicator */
+.serving-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--accent-lime);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  box-shadow: 0 0 12px var(--accent-lime-glow);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: all var(--transition-smooth);
+  margin-top: 0.75rem;
+  width: fit-content;
+}
+
+.serving-badge.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.shuttle-icon {
+  font-size: 1rem;
+  display: inline-block;
+  animation: shuttle-bounce 1s infinite alternate ease-in-out;
+}
+
+@keyframes shuttle-bounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-3px); }
+}
+
+/* Large LED Score Digits */
+.score-box {
+  margin: 1.5rem 0;
+}
+
+.score-digit {
+  font-family: var(--font-score);
+  font-size: 7.5rem;
+  font-weight: 800;
+  line-height: 0.9;
+  color: #ffffff;
+  text-shadow: 0 0 35px rgba(255, 255, 255, 0.25);
+  transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.score-digit.pop {
+  transform: scale(1.12);
+  color: var(--accent-lime);
+  text-shadow: 0 0 45px var(--accent-lime-glow);
+}
+
+/* Sets won count dots */
+.sets-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.set-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--border-medium);
+  background: transparent;
+  transition: all var(--transition-fast);
+}
+
+.set-dot.won {
+  background: var(--accent-gold);
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 10px var(--accent-gold-glow);
+}
+
+/* Center Column: Set info & History */
+.center-column {
+  border-left: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 0.75rem;
+  gap: 1.5rem;
+}
+
+@media (max-width: 850px) {
+  .center-column {
+    border: none;
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+    flex-direction: row;
+    justify-content: space-around;
+  }
+}
+
+.current-set-label {
+  text-align: center;
+}
+
+.current-set-label .set-title {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+
+.current-set-label .set-num {
+  font-family: var(--font-score);
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--accent-cyan);
+}
+
+/* Previous Sets breakdown pills */
+.sets-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.history-pill {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-score);
+  font-size: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.history-pill .score-a { color: #f8fafc; font-weight: 700; }
+.history-pill .score-b { color: #f8fafc; font-weight: 700; }
+.history-pill.winner-a .score-a { color: var(--accent-lime); }
+.history-pill.winner-b .score-b { color: var(--accent-lime); }
+
+/* Fullscreen TV Mode Styles */
+body.fullscreen-tv {
+  background: #000000;
+  overflow: hidden;
+}
+
+body.fullscreen-tv .navbar,
+body.fullscreen-tv .match-actions-bar,
+body.fullscreen-tv footer {
+  display: none !important;
+}
+
+body.fullscreen-tv .container {
+  max-width: 100vw;
+  height: 100vh;
+  padding: 1.5vh 2vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+body.fullscreen-tv .stadium-display {
+  height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+body.fullscreen-tv .court-sides-container {
+  flex: 1;
+}
+
+body.fullscreen-tv .score-digit {
+  font-size: 15vh;
+}
+
+body.fullscreen-tv .team-names {
+  font-size: 5vh;
+}

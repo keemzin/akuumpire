@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShuttleLive — Real-Time Badminton Arena Scoreboard</title>
+  <meta name="description" content="Free, instant live badminton scoreboard for court-side TVs, tournament organizers, and clubs. Frictionless token and PIN access.">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <style>
+    .hero-banner {
+      padding: 3rem 0 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .hero-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .hero-title {
+      font-size: 2.75rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #ffffff 40%, var(--text-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-sub {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      max-width: 600px;
+    }
+
+    /* Filters Bar */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      padding: 0.85rem 1.25rem;
+      border-radius: var(--radius-lg);
+      margin-bottom: 2rem;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 240px;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      padding: 0.65rem 1rem 0.65rem 2.4rem;
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      font-size: 0.9rem;
+    }
+
+    .search-box input:focus {
+      outline: none;
+      border-color: var(--accent-lime);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 0.85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    /* Match Cards Grid */
+    .matches-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .match-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      transition: all var(--transition-fast);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .match-card:hover {
+      border-color: var(--border-medium);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .match-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .court-tag {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.95rem;
+    }
+
+    .court-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-lime);
+    }
+
+    .venue-sub {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .match-scoreboard-preview {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .preview-team-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.25rem 0;
+    }
+
+    .preview-team-row.serving {
+      color: var(--accent-lime);
+    }
+
+    .team-info-box {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      max-width: 80%;
+    }
+
+    .team-code {
+      font-weight: 800;
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 0.2rem 0.4rem;
+      border-radius: var(--radius-sm);
+    }
+
+    .player-names {
+      font-size: 0.95rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .mini-shuttle {
+      font-size: 0.85rem;
+      animation: pulse-dot 1.2s infinite;
+    }
+
+    .team-score-num {
+      font-family: var(--font-score);
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+
+    .match-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .match-meta-info {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .card-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .btn-sm {
+      padding: 0.4rem 0.85rem;
+      font-size: 0.8rem;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 1rem;
+      background: var(--bg-card);
+      border: 1px dashed var(--border-medium);
+      border-radius: var(--radius-xl);
+      grid-column: 1 / -1;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <header class="navbar">
+    <a href="/" class="brand">
+      <div class="brand-icon">🏸</div>
+      <span>Shuttle<span style="color: var(--accent-lime);">Live</span></span>
+    </a>
+    <div class="nav-actions">
+      <a href="/admin" class="btn btn-primary" id="nav-create-match-btn">
+        <span>+ Register Match</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Hero Header -->
+    <section class="hero-banner">
+      <div class="hero-top">
+        <div>
+          <h1 class="hero-title">Live Court Scoreboard</h1>
+          <p class="hero-sub">Frictionless, instant real-time scoreboard. Free to register any match with auto-generated umpire PINs.</p>
+        </div>
+        <div>
+          <span class="badge badge-live" id="live-count">Active Courts</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filters Bar -->
+    <div class="filter-bar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Search court, player name, or venue..." aria-label="Search matches" />
+      </div>
+      <div>
+        <select id="filter-venue" class="form-select" style="min-width: 170px;" aria-label="Filter by venue">
+          <option value="ALL">All Venues</option>
+        </select>
+      </div>
+      <a href="/admin" class="btn btn-secondary">
+        <span>Create New Court</span>
+      </a>
+    </div>
+
+    <!-- Live Matches Grid -->
+    <div class="matches-grid" id="matches-grid">
+      <!-- Dynamically populated by home.js -->
+    </div>
+
+    <div class="empty-state" id="empty-state">
+      <div style="font-size: 3rem; margin-bottom: 0.5rem;">🏸</div>
+      <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem;">No active matches found</h3>
+      <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Be the first to register a match court! Zero signup required.</p>
+      <a href="/admin" class="btn btn-primary">Start a Match Now</a>
+    </div>
+  </main>
+
+  <!-- Enter Umpire PIN Modal -->
+  <div class="modal-backdrop" id="pin-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">Enter Match PIN</h3>
+          <p style="font-size: 0.85rem; color: var(--text-secondary);" id="modal-court-sub">
+            Authorizing for <strong id="modal-court-name" style="color: var(--accent-lime);">Court</strong>
+          </p>
+        </div>
+        <button class="close-btn" id="close-pin-modal" aria-label="Close modal">&times;</button>
+      </div>
+
+      <form id="pin-form">
+        <input type="hidden" id="pin-match-id" />
+        <div class="form-group">
+          <label class="form-label" for="pin-input">4-Digit Umpire PIN</label>
+          <input 
+            type="password" 
+            id="pin-input" 
+            class="form-input" 
+            maxlength="6" 
+            placeholder="e.g. 1234" 
+            required 
+            style="font-size: 1.5rem; text-align: center; letter-spacing: 0.3em; font-family: var(--font-score);"
+          />
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">
+            Generated when the match was created. (Demo match PINs: <code>1234</code> or <code>8888</code>)
+          </p>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+          <button type="submit" class="btn btn-primary" style="flex: 1;">Unlock Umpire Controller</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="/js/home.js"></script>
+</body>
+</html>
