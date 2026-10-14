@@ -397,3 +397,39 @@ export function resumeFromInterval(state) {
   }
   return state;
 }
+
+/**
+ * Conclude match early (e.g. retirement or umpire decision)
+ */
+export function concludeMatchEarly(state, reason = "Concluded early by umpire") {
+  state.status = "FINISHED";
+  state.finishedAt = new Date().toISOString();
+  state.updatedAt = new Date().toISOString();
+  state.endedReason = reason;
+
+  // Determine winner by sets won or current score
+  if (state.teamA.setsWon > state.teamB.setsWon) {
+    state.winner = "A";
+  } else if (state.teamB.setsWon > state.teamA.setsWon) {
+    state.winner = "B";
+  } else if (state.currentScore.teamA > state.currentScore.teamB) {
+    state.winner = "A";
+  } else if (state.currentScore.teamB > state.currentScore.teamA) {
+    state.winner = "B";
+  } else {
+    state.winner = null;
+  }
+  return state;
+}
+
+/**
+ * Abandon match due to AFK inactivity or cancellation
+ */
+export function abandonMatch(state, reason = "Abandoned / Inactivity timeout") {
+  state.status = "ABANDONED";
+  state.finishedAt = new Date().toISOString();
+  state.updatedAt = new Date().toISOString();
+  state.endedReason = reason;
+  return state;
+}
+

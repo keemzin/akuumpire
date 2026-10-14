@@ -5,7 +5,9 @@ import {
   addPoint,
   undoLastPoint,
   startNextSet,
-  getMatchIndicators
+  getMatchIndicators,
+  concludeMatchEarly,
+  abandonMatch
 } from "../server/rules/badmintonRules.js";
 
 test("creates initial match state correctly", () => {
@@ -182,4 +184,25 @@ test("supports custom match rules (Single set to 15, sudden death)", () => {
   assert.equal(match.status, "FINISHED");
   assert.equal(match.winner, "A");
   assert.ok(match.finishedAt);
+});
+
+test("safeguards AFK court with early conclusion and abandon actions", () => {
+  let match = createMatchState({ id: "match-early-end" });
+  match.currentScore = { teamA: 11, teamB: 6 };
+  match.status = "IN_PROGRESS";
+
+  // Conclude early: Leader (Team A) should be awarded the win
+  match = concludeMatchEarly(match, "Player retired");
+  assert.equal(match.status, "FINISHED");
+  assert.equal(match.winner, "A");
+  assert.equal(match.endedReason, "Player retired");
+  assert.ok(match.finishedAt);
+
+  // Abandon court: status becomes ABANDONED
+  let afkMatch = createMatchState({ id: "match-afk" });
+  afkMatch.status = "IN_PROGRESS";
+  afkMatch = abandonMatch(afkMatch, "Inactivity timeout (3h AFK)");
+  assert.equal(afkMatch.status, "ABANDONED");
+  assert.equal(afkMatch.endedReason, "Inactivity timeout (3h AFK)");
+  assert.ok(afkMatch.finishedAt);
 });

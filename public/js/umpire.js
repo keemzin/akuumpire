@@ -128,6 +128,61 @@ function setupUmpireConsole(initialState) {
   document.getElementById("btn-switch-serve")?.addEventListener("click", switchServe);
   document.getElementById("btn-resume-interval")?.addEventListener("click", resumeInterval);
 
+  // Conclude / Abandon Court Actions
+  const concludeModal = document.getElementById("conclude-modal");
+  const closeConcludeBtn = document.getElementById("close-conclude-modal");
+  const btnConclude = document.getElementById("btn-conclude-match");
+  const btnConfirmConclude = document.getElementById("btn-confirm-conclude");
+  const btnConfirmAbandon = document.getElementById("btn-confirm-abandon");
+
+  if (btnConclude && concludeModal) {
+    btnConclude.addEventListener("click", () => {
+      concludeModal.classList.add("active");
+    });
+  }
+
+  if (closeConcludeBtn && concludeModal) {
+    closeConcludeBtn.addEventListener("click", () => {
+      concludeModal.classList.remove("active");
+    });
+  }
+
+  if (concludeModal) {
+    concludeModal.addEventListener("click", (e) => {
+      if (e.target === concludeModal) concludeModal.classList.remove("active");
+    });
+  }
+
+  if (btnConfirmConclude && concludeModal) {
+    btnConfirmConclude.addEventListener("click", () => {
+      concludeModal.classList.remove("active");
+      if (socket) {
+        socket.emit("match:conclude_early", {
+          matchId,
+          pinOrToken: adminToken,
+          action: "CONCLUDE",
+          reason: "Concluded early by umpire"
+        });
+        showToast("Match concluded early", "info");
+      }
+    });
+  }
+
+  if (btnConfirmAbandon && concludeModal) {
+    btnConfirmAbandon.addEventListener("click", () => {
+      concludeModal.classList.remove("active");
+      if (socket) {
+        socket.emit("match:conclude_early", {
+          matchId,
+          pinOrToken: adminToken,
+          action: "ABANDON",
+          reason: "Abandoned / Walkover by court official"
+        });
+        showToast("Court marked as abandoned", "warning");
+      }
+    });
+  }
+
   updateConsoleUI(initialState);
 }
 

@@ -12,6 +12,12 @@ class MatchStore {
     this.ensureDataDir();
     this.loadFromDisk();
     this.seedDemoIfEmpty();
+    this.reapStaleMatches();
+
+    // Periodic reaper for AFK abandoned courts (every 10 minutes)
+    setInterval(() => {
+      this.reapStaleMatches();
+    }, 10 * 60 * 1000).unref();
   }
 
   ensureDataDir() {
@@ -173,7 +179,53 @@ class MatchStore {
     return this.matches.get(matchId) || null;
   }
 
+  reapStaleMatches() {
+    const now = Date.now();
+    const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+    const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
+    let modified = false;
+
+    for (const [id, record] of this.matches.entries()) {
+      if (id.endsWith("-demo")) continue;
+
+      const state = record.matchState;
+      if (!state) continue;
+
+      const createdTime = new Date(record.createdAt || state.createdAt).getTime();
+      const updatedTime = new Date(state.updatedAt || record.createdAt).getTime();
+
+      // Case 1: Warm-up court never started, AFK > 2 hours with 0 points scored
+      if (state.status === "NOT_STARTED") {
+        const hasNoPoints = (!state.currentScore || (state.currentScore.teamA === 0 && state.currentScore.teamB === 0)) &&
+          (!state.setsHistory || state.setsHistory.length === 0);
+        
+        if (hasNoPoints && (now - createdTime > TWO_HOURS_MS)) {
+          this.matches.delete(id);
+          modified = true;
+          continue;
+        }
+      }
+
+      // Case 2: Active match left AFK for > 3 hours with no score updates
+      if (state.status === "IN_PROGRESS" || state.status === "INTERVAL" || state.status === "SET_ENDED") {
+        if (now - updatedTime > THREE_HOURS_MS) {
+          state.status = "ABANDONED";
+          state.finishedAt = new Date().toISOString();
+          state.updatedAt = new Date().toISOString();
+          state.endedReason = "Inactivity timeout (3h AFK)";
+          modified = true;
+        }
+      }
+    }
+
+    if (modified) {
+      this.saveToDisk();
+    }
+    return modified;
+  }
+
   listPublicMatches() {
+    this.reapStaleMatches();
     return Array.from(this.matches.values())
       .map(m => this.sanitizePublicState(m.matchState))
       .sort((a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime());

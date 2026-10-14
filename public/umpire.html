@@ -109,9 +109,35 @@
           <span style="font-size: 1.25rem;">⭐</span>
           <span>Start Next Set</span>
         </button>
+
+        <button class="control-btn" id="btn-conclude-match" title="Conclude or free court" style="border-color: rgba(239, 68, 68, 0.4); color: #f87171;">
+          <span style="font-size: 1.25rem;">🛑</span>
+          <span>End Match</span>
+        </button>
       </div>
     </div>
   </main>
+
+  <!-- Conclude Early / Abandon Confirmation Modal -->
+  <div class="modal-backdrop" id="conclude-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">Conclude / Free Court</h3>
+        <button type="button" class="btn-icon" id="close-conclude-modal" style="background: none; border: none; color: var(--text-muted); font-size: 1.25rem; cursor: pointer;">✕</button>
+      </div>
+      <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.5;">
+        Choose an action if players retired early, forfeited, or the court needs to be freed immediately:
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <button type="button" class="btn btn-primary" id="btn-confirm-conclude" style="width: 100%;">
+          🏆 Conclude Match (Award to Leader)
+        </button>
+        <button type="button" class="btn btn-secondary" id="btn-confirm-abandon" style="width: 100%; border-color: rgba(239, 68, 68, 0.4); color: #f87171;">
+          ⚠️ Abandon Match (Walkover / Cancel)
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Auth Modal (shown if PIN required) -->
   <div class="modal-backdrop" id="auth-modal">

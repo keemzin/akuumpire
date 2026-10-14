@@ -48,6 +48,8 @@ function renderScoreboard(match) {
   const statusBadgeEl = document.getElementById("disp-status-badge");
 
   const isFinished = match.status === "FINISHED";
+  const isAbandoned = match.status === "ABANDONED";
+  const isConcluded = isFinished || isAbandoned;
   const isWinnerA = isFinished && match.winner === "A";
   const isWinnerB = isFinished && match.winner === "B";
   const winnerName = isWinnerA ? match.teamA.name : (isWinnerB ? match.teamB.name : null);
@@ -59,7 +61,10 @@ function renderScoreboard(match) {
 
   // Header status badge
   if (statusBadgeEl) {
-    if (isFinished) {
+    if (isAbandoned) {
+      statusBadgeEl.className = "badge badge-abandoned";
+      statusBadgeEl.textContent = "Abandoned";
+    } else if (isFinished) {
       statusBadgeEl.className = "badge badge-gold";
       statusBadgeEl.textContent = "Ended";
     } else if (match.status === "INTERVAL") {
@@ -73,7 +78,12 @@ function renderScoreboard(match) {
 
   // Center column current set
   if (setEl) {
-    if (isFinished) {
+    if (isAbandoned) {
+      setEl.textContent = "ABANDONED";
+      setEl.style.fontSize = "1.2rem";
+      setEl.style.color = "#f87171";
+      if (setTitleEl) setTitleEl.textContent = "STATUS";
+    } else if (isFinished) {
       setEl.textContent = "ENDED";
       setEl.style.fontSize = "1.5rem";
       setEl.style.color = "var(--accent-gold)";

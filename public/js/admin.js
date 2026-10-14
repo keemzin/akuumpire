@@ -1,9 +1,15 @@
 import { showToast } from "./socket.js";
+import { setupCustomSelect } from "./dropdown.js";
 
 const form = document.getElementById("create-match-form");
 const matchTypeSelect = document.getElementById("match-type");
+const rulePresetSelect = document.getElementById("rule-preset");
 const doublesRows = document.querySelectorAll(".doubles-only");
 const successModal = document.getElementById("success-modal");
+
+// Initialize sleek dark custom dropdowns
+if (matchTypeSelect) setupCustomSelect(matchTypeSelect);
+if (rulePresetSelect) setupCustomSelect(rulePresetSelect);
 
 // Toggle player 2 fields when match type changes
 if (matchTypeSelect) {
@@ -18,7 +24,6 @@ if (matchTypeSelect) {
 }
 
 // Custom rules panel toggle
-const rulePresetSelect = document.getElementById("rule-preset");
 const customRulesPanel = document.getElementById("custom-rules-panel");
 const customPointsInput = document.getElementById("custom-points");
 const customIntervalInput = document.getElementById("custom-interval");

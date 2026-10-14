@@ -1,4 +1,5 @@
 import { socket, showToast } from "./socket.js";
+import { setupCustomSelect, refreshCustomSelect } from "./dropdown.js";
 
 const matchesGrid = document.getElementById("matches-grid");
 const searchInput = document.getElementById("search-input");
@@ -18,8 +19,8 @@ function getMatchDurationMinutes(start, end) {
 }
 
 function updateTabCounts() {
-  const liveMatches = allMatches.filter(m => m.status !== "FINISHED");
-  const endedMatches = allMatches.filter(m => m.status === "FINISHED");
+  const liveMatches = allMatches.filter(m => m.status !== "FINISHED" && m.status !== "ABANDONED");
+  const endedMatches = allMatches.filter(m => m.status === "FINISHED" || m.status === "ABANDONED");
 
   const tabLive = document.getElementById("tab-count-live");
   const tabEnded = document.getElementById("tab-count-ended");
@@ -61,6 +62,9 @@ function updateVenueFilter() {
     filterSelect.appendChild(opt);
   });
   filterSelect.value = venues.includes(currentVal) ? currentVal : "ALL";
+
+  setupCustomSelect(filterSelect);
+  refreshCustomSelect(filterSelect);
 }
 
 function renderMatches() {
@@ -71,8 +75,8 @@ function renderMatches() {
 
   const filtered = allMatches.filter(m => {
     // Tab filter
-    if (currentTab === "LIVE" && m.status === "FINISHED") return false;
-    if (currentTab === "ENDED" && m.status !== "FINISHED") return false;
+    if (currentTab === "LIVE" && (m.status === "FINISHED" || m.status === "ABANDONED")) return false;
+    if (currentTab === "ENDED" && !(m.status === "FINISHED" || m.status === "ABANDONED")) return false;
 
     // Venue filter
     const matchesVenue = selectedVenue === "ALL" || m.venue === selectedVenue;
@@ -110,34 +114,44 @@ function renderMatches() {
   matchesGrid.innerHTML = filtered.map(m => {
     const isLive = m.status === "IN_PROGRESS" || m.status === "INTERVAL" || m.status === "SET_ENDED";
     const isFinished = m.status === "FINISHED";
+    const isAbandoned = m.status === "ABANDONED";
     const isWinnerA = isFinished && m.winner === "A";
     const isWinnerB = isFinished && m.winner === "B";
 
-    const statusBadge = isLive 
-      ? `<span class="badge badge-live">Live</span>` 
+    const idleMins = Math.max(0, Math.floor((Date.now() - new Date(m.updatedAt || m.createdAt).getTime()) / 60000));
+    const isIdle = isLive && idleMins >= 15;
+
+    const statusBadge = isAbandoned
+      ? `<span class="badge badge-abandoned" title="${escapeHtml(m.endedReason || 'Abandoned')}">Abandoned</span>`
       : isFinished 
       ? `<span class="badge badge-gold">Ended</span>` 
+      : isIdle
+      ? `<span class="badge badge-idle" title="Court idle for ${idleMins} minutes without score update">⏸️ Idle (${idleMins}m)</span>`
+      : isLive 
+      ? `<span class="badge badge-live">Live</span>` 
       : `<span class="badge badge-ended">Warm-up</span>`;
 
     const teamAPlayers = m.teamA.player2 ? `${m.teamA.player1} & ${m.teamA.player2}` : m.teamA.player1;
     const teamBPlayers = m.teamB.player2 ? `${m.teamB.player1} & ${m.teamB.player2}` : m.teamB.player1;
 
     const durationMins = getMatchDurationMinutes(m.createdAt, m.finishedAt || m.updatedAt);
-    const metaSummary = isFinished
+    const metaSummary = isAbandoned
+      ? `Abandoned • ⏱️ ${durationMins}m • ${m.endedReason || 'Inactivity'}`
+      : isFinished
       ? `Final (${m.teamA.setsWon} - ${m.teamB.setsWon}) • ⏱️ ${durationMins}m`
       : `Set ${m.currentSet} (${m.teamA.setsWon} - ${m.teamB.setsWon})`;
 
-    const setsBreakdown = isFinished && m.setsHistory && m.setsHistory.length > 0
+    const setsBreakdown = (isFinished || isAbandoned) && m.setsHistory && m.setsHistory.length > 0
       ? `<div class="history-sets-row">${m.setsHistory.map(s => `<span>S${s.set}: <strong>${s.teamA}-${s.teamB}</strong></span>`).join(' • ')}</div>`
       : '';
 
     const formatTag = m.rules?.shortName || (m.rules?.setsToWin > 1 ? 'Bo3 to 21' : '1 Set');
 
     return `
-      <div class="match-card ${isFinished ? 'match-ended' : ''}" data-id="${m.id}">
+      <div class="match-card ${isFinished || isAbandoned ? 'match-ended' : ''}" data-id="${m.id}">
         <div class="match-card-header">
           <div class="court-tag">
-            <span class="court-dot ${isFinished ? 'ended' : ''}"></span>
+            <span class="court-dot ${isFinished || isAbandoned ? 'ended' : ''}"></span>
             <strong>${escapeHtml(m.court)}</strong>
             <span class="venue-sub">• ${escapeHtml(m.venue)}</span>
           </div>
@@ -174,13 +188,13 @@ function renderMatches() {
 
         <div class="match-card-footer">
           <div class="match-meta-info" style="display: flex; flex-direction: column; gap: 0.25rem;">
-            <span class="set-indicator" style="${isFinished ? 'color: var(--accent-gold); font-weight: 700;' : ''}">${metaSummary}</span>
+            <span class="set-indicator" style="${isFinished ? 'color: var(--accent-gold); font-weight: 700;' : isAbandoned ? 'color: #f87171; font-weight: 700;' : ''}">${metaSummary}</span>
             ${setsBreakdown}
           </div>
           <div class="card-btn-group">
-            <a href="/match/${m.id}" class="btn btn-secondary btn-sm">${isFinished ? 'Scoreboard' : 'Watch TV'}</a>
-            <button class="btn ${isFinished ? 'btn-secondary' : 'btn-primary'} btn-sm open-umpire-pin-btn" data-id="${m.id}" data-court="${escapeHtml(m.court)}">
-              ${isFinished ? 'Admin' : 'Umpire'}
+            <a href="/match/${m.id}" class="btn btn-secondary btn-sm">${isFinished || isAbandoned ? 'Scoreboard' : 'Watch TV'}</a>
+            <button class="btn ${isFinished || isAbandoned ? 'btn-secondary' : 'btn-primary'} btn-sm open-umpire-pin-btn" data-id="${m.id}" data-court="${escapeHtml(m.court)}">
+              ${isFinished || isAbandoned ? 'Admin' : 'Umpire'}
             </button>
           </div>
         </div>

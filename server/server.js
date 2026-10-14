@@ -12,7 +12,9 @@ import {
   startNextSet,
   switchServingTeam,
   switchCourtEnds,
-  resumeFromInterval
+  resumeFromInterval,
+  concludeMatchEarly,
+  abandonMatch
 } from "./rules/badmintonRules.js";
 
 const app = express();
@@ -187,6 +189,17 @@ io.on("connection", (socket) => {
   socket.on("match:resume_interval", (data) => {
     handleUmpireAction(data, (state) => {
       resumeFromInterval(state);
+    });
+  });
+
+  // Umpire concludes or abandons match early
+  socket.on("match:conclude_early", (data) => {
+    handleUmpireAction(data, (state) => {
+      if (data.action === "ABANDON") {
+        abandonMatch(state, data.reason || "Abandoned by court official");
+      } else {
+        concludeMatchEarly(state, data.reason || "Concluded early by umpire");
+      }
     });
   });
 });
