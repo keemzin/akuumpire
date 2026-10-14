@@ -253,7 +253,7 @@
 
 .score-digit {
   font-family: var(--font-score);
-  font-size: 7.5rem;
+  font-size: clamp(4rem, 18vw, 7.5rem);
   font-weight: 800;
   line-height: 0.9;
   color: #ffffff;

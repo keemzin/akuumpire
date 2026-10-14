@@ -48,7 +48,32 @@
 
 @media (max-width: 600px) {
   .score-pads-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+  .score-pad-btn {
+    padding: 1.25rem 0.5rem;
+    border-radius: var(--radius-lg);
+  }
+  .pad-team-name {
+    font-size: 1.1rem;
+  }
+  .pad-player-sub {
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+  }
+  .pad-score-val {
+    font-size: 4.25rem;
+  }
+  .pad-tap-hint {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+  }
+  .umpire-header {
+    padding: 0.75rem 1rem;
+  }
+  .umpire-toolbar {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 

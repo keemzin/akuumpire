@@ -239,6 +239,26 @@
       grid-column: 1 / -1;
       display: none;
     }
+
+    @media (max-width: 640px) {
+      .hero-title {
+        font-size: 1.85rem;
+      }
+      .hero-sub {
+        font-size: 0.95rem;
+      }
+      .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+      }
+      .search-box {
+        min-width: 100%;
+      }
+      .matches-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -288,7 +308,65 @@
 
     <!-- Live Matches Grid -->
     <div class="matches-grid" id="matches-grid">
-      <!-- Dynamically populated by home.js -->
+      <!-- Initial Loading Skeleton Cards -->
+      <div class="skeleton-card">
+        <div class="skeleton-header">
+          <div class="skeleton" style="width: 140px; height: 18px;"></div>
+          <div class="skeleton" style="width: 65px; height: 20px; border-radius: 9999px;"></div>
+        </div>
+        <div class="skeleton-preview">
+          <div class="skeleton-row">
+            <div style="display: flex; gap: 0.5rem; align-items: center; width: 70%;">
+              <div class="skeleton" style="width: 45px; height: 22px;"></div>
+              <div class="skeleton" style="width: 60%; height: 16px;"></div>
+            </div>
+            <div class="skeleton" style="width: 25px; height: 28px;"></div>
+          </div>
+          <div class="skeleton-row">
+            <div style="display: flex; gap: 0.5rem; align-items: center; width: 70%;">
+              <div class="skeleton" style="width: 45px; height: 22px;"></div>
+              <div class="skeleton" style="width: 50%; height: 16px;"></div>
+            </div>
+            <div class="skeleton" style="width: 25px; height: 28px;"></div>
+          </div>
+        </div>
+        <div class="skeleton-footer">
+          <div class="skeleton" style="width: 90px; height: 16px;"></div>
+          <div style="display: flex; gap: 0.4rem;">
+            <div class="skeleton" style="width: 70px; height: 28px; border-radius: 6px;"></div>
+            <div class="skeleton" style="width: 70px; height: 28px; border-radius: 6px;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="skeleton-card">
+        <div class="skeleton-header">
+          <div class="skeleton" style="width: 130px; height: 18px;"></div>
+          <div class="skeleton" style="width: 65px; height: 20px; border-radius: 9999px;"></div>
+        </div>
+        <div class="skeleton-preview">
+          <div class="skeleton-row">
+            <div style="display: flex; gap: 0.5rem; align-items: center; width: 70%;">
+              <div class="skeleton" style="width: 45px; height: 22px;"></div>
+              <div class="skeleton" style="width: 65%; height: 16px;"></div>
+            </div>
+            <div class="skeleton" style="width: 25px; height: 28px;"></div>
+          </div>
+          <div class="skeleton-row">
+            <div style="display: flex; gap: 0.5rem; align-items: center; width: 70%;">
+              <div class="skeleton" style="width: 45px; height: 22px;"></div>
+              <div class="skeleton" style="width: 55%; height: 16px;"></div>
+            </div>
+            <div class="skeleton" style="width: 25px; height: 28px;"></div>
+          </div>
+        </div>
+        <div class="skeleton-footer">
+          <div class="skeleton" style="width: 85px; height: 16px;"></div>
+          <div style="display: flex; gap: 0.4rem;">
+            <div class="skeleton" style="width: 70px; height: 28px; border-radius: 6px;"></div>
+            <div class="skeleton" style="width: 70px; height: 28px; border-radius: 6px;"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="empty-state" id="empty-state">
