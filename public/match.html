@@ -18,6 +18,10 @@
       <span>Shuttle<span style="color: var(--accent-lime);">Live</span></span>
     </a>
     <div class="nav-actions">
+      <button class="btn btn-secondary" id="open-replay-btn" style="display: none;" title="Simulate Match Replay">
+        <span>🎬</span>
+        <span>Replay</span>
+      </button>
       <button class="btn btn-secondary" id="share-btn" title="Share live scoreboard via QR Code">
         <span>📲</span>
         <span>Share</span>
@@ -120,6 +124,58 @@
                 <div id="sets-won-b" style="display: flex; gap: 0.35rem;"></div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Match Replay Simulation Floating Controller -->
+      <div class="replay-controller-card" id="replay-controller" style="display: none;">
+        <div class="replay-header-line">
+          <div class="replay-status-tag">
+            <span class="replay-dot"></span>
+            <strong>MATCH REPLAY SIMULATION</strong>
+            <span class="replay-rally-info" id="replay-rally-text">Rally 0 of 0</span>
+          </div>
+          <div class="replay-actions-right">
+            <button class="btn btn-secondary btn-xs" id="replay-close-btn" title="Exit replay mode">
+              <span>✕</span> Exit Replay
+            </button>
+          </div>
+        </div>
+
+        <div class="replay-controls-main">
+          <!-- Play / Pause / Restart / Step -->
+          <div class="replay-btn-cluster">
+            <button class="btn-replay-icon" id="replay-btn-restart" title="Restart from beginning">
+              <span>↺</span>
+            </button>
+            <button class="btn-replay-icon" id="replay-btn-prev" title="Step backward 1 point">
+              <span>⏮</span>
+            </button>
+            <button class="btn-replay-icon btn-replay-play" id="replay-btn-toggle" title="Play / Pause">
+              <span id="replay-play-icon">▶</span>
+            </button>
+            <button class="btn-replay-icon" id="replay-btn-next" title="Step forward 1 point">
+              <span>⏭</span>
+            </button>
+          </div>
+
+          <!-- Timeline scrubber -->
+          <div class="replay-scrubber-container">
+            <input type="range" id="replay-slider" min="0" max="100" value="0" step="1" class="replay-slider" aria-label="Replay timeline slider" />
+            <div class="replay-slider-ticks">
+              <span id="replay-tick-start">0-0 (Start)</span>
+              <span id="replay-tick-status">Set 1</span>
+              <span id="replay-tick-end">Final Point</span>
+            </div>
+          </div>
+
+          <!-- Speed Toggles -->
+          <div class="replay-speed-group">
+            <span class="speed-label">Speed:</span>
+            <button class="btn-speed active" data-speed="1">1x</button>
+            <button class="btn-speed" data-speed="2">2x</button>
+            <button class="btn-speed" data-speed="4">4x</button>
           </div>
         </div>
       </div>

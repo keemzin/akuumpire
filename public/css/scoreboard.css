@@ -397,3 +397,193 @@ body.fullscreen-tv .score-digit {
 body.fullscreen-tv .team-names {
   font-size: 5vh;
 }
+
+/* =========================================
+   Match Replay Simulation Controller
+   ========================================= */
+.replay-controller-card {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.7), 0 0 25px rgba(6, 182, 212, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  animation: slide-up 0.3s ease-out;
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.replay-header-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.65rem;
+}
+
+.replay-status-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.replay-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 8px var(--accent-cyan);
+  animation: pulse-dot 1.2s infinite;
+}
+
+.replay-rally-info {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  color: var(--accent-lime);
+  font-weight: 600;
+}
+
+.replay-controls-main {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.replay-btn-cluster {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.btn-replay-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-medium);
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-replay-icon:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.btn-replay-play {
+  width: 44px;
+  height: 44px;
+  background: var(--accent-lime);
+  border-color: var(--accent-lime);
+  color: #052e16;
+  font-weight: 900;
+  font-size: 1.2rem;
+  border-radius: 50%;
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+}
+
+.btn-replay-play:hover {
+  background: #4ade80;
+  color: #052e16;
+  transform: scale(1.05);
+}
+
+.replay-scrubber-container {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.replay-slider {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  outline: none;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.replay-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-lime);
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.7);
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+.replay-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.replay-slider-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.replay-speed-group {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.25rem 0.4rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.speed-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-right: 0.2rem;
+}
+
+.btn-speed {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-speed.active {
+  background: var(--accent-cyan);
+  color: #082f49;
+}
+
+.btn-xs {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.75rem;
+}
+

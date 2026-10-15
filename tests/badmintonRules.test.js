@@ -10,6 +10,7 @@ import {
   abandonMatch
 } from "../server/rules/badmintonRules.js";
 import { matchStore } from "../server/models/matchStore.js";
+import { buildReplayFrames } from "../public/js/replayEngine.js";
 
 test("creates initial match state correctly", () => {
   const match = createMatchState({
@@ -228,3 +229,35 @@ test("super admin reaper correctly auto-archives matches idle > 3 hours", () => 
   // Clean up
   matchStore.deleteMatch(testMatch.id);
 });
+
+test("buildReplayFrames generates valid simulation frames from 0-0 to final score", () => {
+  const dummyMatch = {
+    id: "court-3-demo",
+    status: "FINISHED",
+    winner: "B",
+    currentScore: { teamA: 18, teamB: 21 },
+    currentSet: 3,
+    setsHistory: [
+      { set: 1, teamA: 17, teamB: 21, winner: "B" },
+      { set: 2, teamA: 21, teamB: 7, winner: "A" },
+      { set: 3, teamA: 18, teamB: 21, winner: "B" }
+    ],
+    rules: { pointsPerSet: 21, maxPointsCap: 30, setsToWin: 2 },
+    teamA: { name: "Tigers", player1: "Alex Tan", player2: "Kenji Sato", setsWon: 1 },
+    teamB: { name: "Falcons", player1: "David Lim", player2: "Marcus Ray", setsWon: 2 }
+  };
+
+  const frames = buildReplayFrames(dummyMatch);
+  assert.ok(Array.isArray(frames));
+  assert.ok(frames.length > 50, "Should generate detailed rally sequence");
+
+  // First frame is 0-0
+  assert.equal(frames[0].currentScore.teamA, 0);
+  assert.equal(frames[0].currentScore.teamB, 0);
+
+  // Last frame is final match conclusion
+  const lastFrame = frames[frames.length - 1];
+  assert.equal(lastFrame.isMatchEnd, true);
+  assert.equal(lastFrame.winner, "B");
+});
+

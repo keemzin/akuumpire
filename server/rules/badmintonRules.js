@@ -296,15 +296,26 @@ export function addPoint(state, scoringTeam) {
   }
 
   if (setWinner) {
-    if (setWinner === "A") state.teamA.setsWon += 1;
-    if (setWinner === "B") state.teamB.setsWon += 1;
+    const existingSetIdx = state.setsHistory.findIndex(s => s.set === state.currentSet);
+    if (existingSetIdx >= 0) {
+      // Set was already recorded, update the final score without double counting setsWon
+      state.setsHistory[existingSetIdx] = {
+        set: state.currentSet,
+        teamA: scoreA,
+        teamB: scoreB,
+        winner: setWinner
+      };
+    } else {
+      if (setWinner === "A") state.teamA.setsWon += 1;
+      if (setWinner === "B") state.teamB.setsWon += 1;
 
-    state.setsHistory.push({
-      set: state.currentSet,
-      teamA: scoreA,
-      teamB: scoreB,
-      winner: setWinner
-    });
+      state.setsHistory.push({
+        set: state.currentSet,
+        teamA: scoreA,
+        teamB: scoreB,
+        winner: setWinner
+      });
+    }
 
     // Check Match Win
     if (state.teamA.setsWon >= state.rules.setsToWin) {

@@ -32,6 +32,14 @@ class MatchStore {
         const raw = fs.readFileSync(DATA_FILE, "utf-8");
         const list = JSON.parse(raw);
         for (const item of list) {
+          if (Array.isArray(item.matchState?.setsHistory)) {
+            const map = new Map();
+            item.matchState.setsHistory.forEach((s, idx) => {
+              const k = s.set || (idx + 1);
+              map.set(k, { ...s, set: k });
+            });
+            item.matchState.setsHistory = Array.from(map.values());
+          }
           this.matches.set(item.id, item);
         }
       }

@@ -1,4 +1,5 @@
 import { socket, showToast, playScoreBeep } from "./socket.js";
+import { buildReplayFrames } from "./replayEngine.js";
 
 // Extract match ID from URL (/match/court-1-demo or ?id=...)
 const pathParts = window.location.pathname.split("/").filter(Boolean);
@@ -7,6 +8,12 @@ const matchId = pathParts[1] || new URLSearchParams(window.location.search).get(
 let currentMatchData = null;
 let lastScoreA = 0;
 let lastScoreB = 0;
+let isReplayMode = false;
+let replayFrames = [];
+let currentFrameIdx = 0;
+let replayTimer = null;
+let replaySpeed = 1;
+const BASE_SPEED_MS = 800;
 
 async function loadInitialMatch() {
   if (!matchId) {
@@ -19,12 +26,18 @@ async function loadInitialMatch() {
     if (!res.ok) throw new Error("Match not found");
     const data = await res.json();
     renderScoreboard(data);
+
+    // Check if URL has ?replay=1
+    const shouldAutoReplay = new URLSearchParams(window.location.search).get("replay") === "1";
+    if (shouldAutoReplay && window.triggerReplayMode) {
+      setTimeout(() => window.triggerReplayMode(true), 300);
+    }
     
     // Connect to real-time room
     if (socket) {
       socket.emit("match:join", { matchId });
       socket.on("match:updated", (updated) => {
-        renderScoreboard(updated);
+        if (!isReplayMode) renderScoreboard(updated);
       });
       socket.on("match:deleted", () => {
         showToast("This match has been concluded or deleted.", "warning");
@@ -37,6 +50,7 @@ async function loadInitialMatch() {
 }
 
 function renderScoreboard(match) {
+  if (isReplayMode) return;
   currentMatchData = match;
 
   // Header & Info
@@ -73,6 +87,16 @@ function renderScoreboard(match) {
     } else {
       statusBadgeEl.className = "badge badge-live";
       statusBadgeEl.textContent = "Live";
+    }
+  }
+
+  // Toggle Replay Button in Navbar
+  const openReplayBtn = document.getElementById("open-replay-btn");
+  if (openReplayBtn) {
+    if (isFinished || isAbandoned) {
+      openReplayBtn.style.display = "inline-flex";
+    } else {
+      openReplayBtn.style.display = "none";
     }
   }
 
@@ -203,7 +227,15 @@ function renderSetsHistory(history) {
     return;
   }
 
-  container.innerHTML = history.map(h => `
+  // Deduplicate by set number (take latest entry for each set)
+  const uniqueSetsMap = new Map();
+  history.forEach((h, idx) => {
+    const setNum = h.set || (idx + 1);
+    uniqueSetsMap.set(setNum, { ...h, set: setNum });
+  });
+  const uniqueHistory = Array.from(uniqueSetsMap.values());
+
+  container.innerHTML = uniqueHistory.map(h => `
     <div class="history-pill ${h.winner === 'A' ? 'winner-a' : 'winner-b'}">
       <span style="font-size: 0.7rem; color: var(--text-muted);">S${h.set}</span>
       <span class="score-a">${h.teamA}</span>
@@ -368,9 +400,232 @@ function setupShareModal() {
   }
 }
 
+// ==========================================
+// Match Replay & Simulation Controller
+// ==========================================
+function setupReplayController() {
+  const openReplayBtn = document.getElementById("open-replay-btn");
+  const replayCard = document.getElementById("replay-controller");
+  const closeReplayBtn = document.getElementById("replay-close-btn");
+  const playToggleBtn = document.getElementById("replay-btn-toggle");
+  const playIcon = document.getElementById("replay-play-icon");
+  const restartBtn = document.getElementById("replay-btn-restart");
+  const prevBtn = document.getElementById("replay-btn-prev");
+  const nextBtn = document.getElementById("replay-btn-next");
+  const slider = document.getElementById("replay-slider");
+  const rallyText = document.getElementById("replay-rally-text");
+  const tickStatus = document.getElementById("replay-tick-status");
+  const speedBtns = document.querySelectorAll(".btn-speed");
+
+  if (!replayCard) return;
+
+  function startReplayMode(autoPlay = false) {
+    if (!currentMatchData) return;
+    isReplayMode = true;
+    replayFrames = buildReplayFrames(currentMatchData);
+    if (!replayFrames || replayFrames.length === 0) {
+      showToast("No replay frames available for this match", "warning");
+      return;
+    }
+
+    replayCard.style.display = "flex";
+    if (openReplayBtn) openReplayBtn.style.display = "none";
+
+    slider.min = 0;
+    slider.max = replayFrames.length - 1;
+    slider.value = 0;
+
+    seekToFrame(0, false);
+
+    if (autoPlay) {
+      play();
+    }
+  }
+
+  function exitReplayMode() {
+    pause();
+    isReplayMode = false;
+    replayCard.style.display = "none";
+    if (openReplayBtn) openReplayBtn.style.display = "inline-flex";
+    if (currentMatchData) renderScoreboard(currentMatchData);
+  }
+
+  function seekToFrame(idx, playSound = false) {
+    if (!replayFrames || replayFrames.length === 0) return;
+    currentFrameIdx = Math.max(0, Math.min(idx, replayFrames.length - 1));
+    slider.value = currentFrameIdx;
+
+    const frame = replayFrames[currentFrameIdx];
+    rallyText.textContent = `Rally ${currentFrameIdx} of ${replayFrames.length - 1}`;
+    tickStatus.textContent = frame.note || `Set ${frame.currentSet}`;
+
+    // Render snapshot
+    renderReplaySnapshot(frame);
+
+    if (playSound) {
+      playScoreBeep(frame.indicators?.isGamePoint || frame.indicators?.isMatchPoint);
+    }
+
+    if (currentFrameIdx >= replayFrames.length - 1) {
+      pause();
+    }
+  }
+
+  function play() {
+    if (currentFrameIdx >= replayFrames.length - 1) {
+      currentFrameIdx = 0;
+    }
+    pause();
+    playIcon.textContent = "⏸";
+    replayTimer = setInterval(() => {
+      if (currentFrameIdx < replayFrames.length - 1) {
+        seekToFrame(currentFrameIdx + 1, true);
+      } else {
+        pause();
+      }
+    }, Math.floor(BASE_SPEED_MS / replaySpeed));
+  }
+
+  function pause() {
+    if (replayTimer) {
+      clearInterval(replayTimer);
+      replayTimer = null;
+    }
+    if (playIcon) playIcon.textContent = "▶";
+  }
+
+  function togglePlay() {
+    if (replayTimer) pause();
+    else play();
+  }
+
+  if (openReplayBtn) openReplayBtn.addEventListener("click", () => startReplayMode(true));
+  if (closeReplayBtn) closeReplayBtn.addEventListener("click", exitReplayMode);
+  if (playToggleBtn) playToggleBtn.addEventListener("click", togglePlay);
+  if (restartBtn) restartBtn.addEventListener("click", () => { pause(); seekToFrame(0); });
+  if (prevBtn) prevBtn.addEventListener("click", () => { pause(); seekToFrame(currentFrameIdx - 1); });
+  if (nextBtn) nextBtn.addEventListener("click", () => { pause(); seekToFrame(currentFrameIdx + 1); });
+
+  slider.addEventListener("input", (e) => {
+    pause();
+    seekToFrame(Number(e.target.value));
+  });
+
+  speedBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      speedBtns.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      replaySpeed = Number(btn.dataset.speed) || 1;
+      if (replayTimer) {
+        play(); // restart timer with new speed
+      }
+    });
+  });
+
+  // Expose starter for URL param check
+  window.triggerReplayMode = (autoPlay) => startReplayMode(autoPlay);
+}
+
+function renderReplaySnapshot(frame) {
+  if (!currentMatchData) return;
+
+  const scoreAEl = document.getElementById("disp-score-a");
+  const scoreBEl = document.getElementById("disp-score-b");
+  const setEl = document.getElementById("disp-current-set");
+  const setTitleEl = document.querySelector(".current-set-label .set-title");
+  const statusBadgeEl = document.getElementById("disp-status-badge");
+  const servingAEl = document.getElementById("serving-a-indicator");
+  const servingBEl = document.getElementById("serving-b-indicator");
+  const panelA = document.getElementById("panel-team-a");
+  const panelB = document.getElementById("panel-team-b");
+  const banner = document.getElementById("status-banner");
+
+  // Replay Badge in Header
+  if (statusBadgeEl) {
+    statusBadgeEl.className = "badge badge-cyan";
+    statusBadgeEl.textContent = "🎬 REPLAY";
+  }
+
+  // Scores
+  if (scoreAEl) {
+    if (Number(scoreAEl.textContent) !== frame.currentScore.teamA) {
+      scoreAEl.classList.add("pop");
+      setTimeout(() => scoreAEl.classList.remove("pop"), 180);
+    }
+    scoreAEl.textContent = frame.currentScore.teamA;
+  }
+  if (scoreBEl) {
+    if (Number(scoreBEl.textContent) !== frame.currentScore.teamB) {
+      scoreBEl.classList.add("pop");
+      setTimeout(() => scoreBEl.classList.remove("pop"), 180);
+    }
+    scoreBEl.textContent = frame.currentScore.teamB;
+  }
+
+  // Current Set
+  if (setEl) {
+    setEl.textContent = frame.currentSet;
+    setEl.style.fontSize = "2.5rem";
+    setEl.style.color = "var(--accent-cyan)";
+    if (setTitleEl) setTitleEl.textContent = "CURRENT SET";
+  }
+
+  // Serving
+  const isServingA = frame.servingTeam === "A";
+  const isServingB = frame.servingTeam === "B";
+  if (servingAEl) servingAEl.classList.toggle("active", isServingA);
+  if (servingBEl) servingBEl.classList.toggle("active", isServingB);
+  if (panelA) {
+    panelA.classList.toggle("serving", isServingA);
+    panelA.classList.toggle("winner-panel", frame.isMatchEnd && frame.winner === "A");
+    panelA.classList.toggle("defeated-panel", frame.isMatchEnd && frame.winner === "B");
+  }
+  if (panelB) {
+    panelB.classList.toggle("serving", isServingB);
+    panelB.classList.toggle("winner-panel", frame.isMatchEnd && frame.winner === "B");
+    panelB.classList.toggle("defeated-panel", frame.isMatchEnd && frame.winner === "A");
+  }
+
+  // Sets Won & History
+  renderSetsWon("sets-won-a", frame.teamA.setsWon, currentMatchData.rules.setsToWin);
+  renderSetsWon("sets-won-b", frame.teamB.setsWon, currentMatchData.rules.setsToWin);
+  renderSetsHistory(frame.setsHistory);
+
+  // Status Banner
+  if (banner) {
+    banner.className = "status-banner";
+    const ind = frame.indicators || {};
+    if (frame.isMatchEnd) {
+      banner.classList.add("active", "finished");
+      const winnerName = frame.winner === "A" ? currentMatchData.teamA.name : currentMatchData.teamB.name;
+      banner.textContent = `🏆 MATCH CONCLUDED — ${winnerName} WINS!`;
+    } else if (ind.isMatchPoint) {
+      banner.classList.add("active", "match-point");
+      const leadingName = ind.leader === "A" ? currentMatchData.teamA.name : currentMatchData.teamB.name;
+      banner.textContent = `⚡ MATCH POINT — ${leadingName}`;
+    } else if (ind.isGamePoint) {
+      banner.classList.add("active", "game-point");
+      const leadingName = ind.leader === "A" ? currentMatchData.teamA.name : currentMatchData.teamB.name;
+      banner.textContent = `🏸 GAME POINT — ${leadingName}`;
+    } else if (frame.status === "INTERVAL") {
+      banner.classList.add("active", "interval");
+      banner.textContent = `⏱️ 11-POINT INTERVAL BREAK`;
+    } else if (frame.status === "SET_ENDED") {
+      banner.classList.add("active", "game-point");
+      banner.textContent = `🏁 SET ${frame.currentSet} COMPLETED`;
+    } else if (ind.isDeuce) {
+      banner.classList.add("active", "deuce");
+      banner.textContent = `🔥 DEUCE — SUDDEN DEATH EXTENSION`;
+    } else {
+      banner.classList.remove("active");
+    }
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   loadInitialMatch();
   setupUmpireAuth();
   setupFullscreenToggle();
   setupShareModal();
+  setupReplayController();
 });
