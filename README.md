@@ -83,6 +83,48 @@ npm test
 
 ---
 
+## 🔄 CI/CD & GitHub Workflow Guide
+
+ShuttleLive includes a production-grade **GitHub Actions CI pipeline** (`.github/workflows/ci.yml`) that automatically validates all scoring, rotation, and replay logic across multiple Node.js environments.
+
+### 1. Pushing Code to `master` (Automatic CI)
+You do **not** need any tag to trigger CI. Any normal push to `master` triggers the test suite automatically:
+
+```bash
+git add .
+git commit -m "feat: your new feature"
+git push origin master
+```
+
+**What happens:**
+1. GitHub detects the push to `master`.
+2. Spins up 3 parallel virtual machines testing on **Node 18.x, 20.x, and 22.x**.
+3. Installs clean dependencies via `npm ci` and executes all unit tests (`npm test`).
+4. If all tests pass, your commit receives a green verified checkmark (**✔**).
+
+### 2. Creating Version Tags / Releases
+When releasing a new milestone or major version, you can tag your commits using Semantic Versioning (`v1.0.0`, `v1.1.0`):
+
+```bash
+# Create an annotated tag
+git tag -a v1.0.0 -m "Release v1.0.0: Live scoreboard, umpire touch controller, and match replay"
+
+# Push the tag to GitHub
+git push origin v1.0.0
+
+# Or push code and all tags simultaneously:
+git push origin master --tags
+```
+
+**What happens:**
+- The CI pipeline runs on tag `v*` to certify the release build.
+- GitHub automatically creates a release milestone under your repository's **Releases** tab.
+
+### 3. Monitoring Test Runs
+Visit your repository on GitHub and click the **Actions** tab (`https://github.com/<owner>/<repo>/actions`) to see real-time execution logs for every commit and tag.
+
+---
+
 ## 📦 Project Structure
 
 ```
