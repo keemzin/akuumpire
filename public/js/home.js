@@ -9,6 +9,8 @@ const liveCountEl = document.getElementById("live-count");
 
 let allMatches = [];
 let currentTab = "LIVE";
+let savedTabBeforeSearch = "LIVE";
+let isSearching = false;
 
 function getMatchDurationMinutes(start, end) {
   if (!start) return 15;
@@ -18,9 +20,16 @@ function getMatchDurationMinutes(start, end) {
   return diffMins;
 }
 
-function updateTabCounts() {
-  const liveMatches = allMatches.filter(m => m.status !== "FINISHED" && m.status !== "ABANDONED");
-  const endedMatches = allMatches.filter(m => m.status === "FINISHED" || m.status === "ABANDONED");
+function setActiveTabButton(tabName) {
+  const tabBtns = document.querySelectorAll(".tab-pill-btn");
+  tabBtns.forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.tab === tabName);
+  });
+}
+
+function updateTabCounts(sourceMatches = allMatches, isSearchFiltered = false) {
+  const liveMatches = sourceMatches.filter(m => m.status !== "FINISHED" && m.status !== "ABANDONED");
+  const endedMatches = sourceMatches.filter(m => m.status === "FINISHED" || m.status === "ABANDONED");
 
   const tabLive = document.getElementById("tab-count-live");
   const tabEnded = document.getElementById("tab-count-ended");
@@ -28,11 +37,15 @@ function updateTabCounts() {
 
   if (tabLive) tabLive.textContent = liveMatches.length;
   if (tabEnded) tabEnded.textContent = endedMatches.length;
-  if (tabAll) tabAll.textContent = allMatches.length;
+  if (tabAll) tabAll.textContent = sourceMatches.length;
 
   if (liveCountEl) {
-    const activeCount = liveMatches.length;
-    liveCountEl.textContent = `${activeCount} Active ${activeCount === 1 ? 'Court' : 'Courts'}`;
+    if (isSearchFiltered) {
+      liveCountEl.textContent = `${sourceMatches.length} Matching ${sourceMatches.length === 1 ? 'Result' : 'Results'}`;
+    } else {
+      const globalLive = allMatches.filter(m => m.status !== "FINISHED" && m.status !== "ABANDONED");
+      liveCountEl.textContent = `${globalLive.length} Active ${globalLive.length === 1 ? 'Court' : 'Courts'}`;
+    }
   }
 }
 
@@ -40,7 +53,6 @@ async function fetchMatches() {
   try {
     const res = await fetch("/api/matches");
     allMatches = await res.json();
-    updateTabCounts();
     renderMatches();
     updateVenueFilter();
   } catch (err) {
@@ -70,21 +82,49 @@ function updateVenueFilter() {
 function renderMatches() {
   if (!matchesGrid) return;
 
-  const query = (searchInput?.value || "").toLowerCase().trim();
+  const rawQuery = (searchInput?.value || "").trim();
+  const query = rawQuery.toLowerCase();
   const selectedVenue = filterSelect?.value || "ALL";
+  const clearBtn = document.getElementById("search-clear-btn");
 
-  const filtered = allMatches.filter(m => {
-    // Tab filter
-    if (currentTab === "LIVE" && (m.status === "FINISHED" || m.status === "ABANDONED")) return false;
-    if (currentTab === "ENDED" && !(m.status === "FINISHED" || m.status === "ABANDONED")) return false;
+  if (clearBtn) {
+    clearBtn.style.display = rawQuery ? "inline-flex" : "none";
+  }
 
-    // Venue filter
+  // Global search transition:
+  // When user types in search, automatically search across ALL matches.
+  // When cleared, restore the user's previously selected tab.
+  if (query) {
+    if (!isSearching) {
+      isSearching = true;
+      savedTabBeforeSearch = currentTab;
+      currentTab = "ALL";
+      setActiveTabButton("ALL");
+    }
+  } else {
+    if (isSearching) {
+      isSearching = false;
+      currentTab = savedTabBeforeSearch;
+      setActiveTabButton(savedTabBeforeSearch);
+    }
+  }
+
+  // 1. Search globally across ALL matches matching query & venue
+  const venueAndSearchMatches = allMatches.filter(m => {
     const matchesVenue = selectedVenue === "ALL" || m.venue === selectedVenue;
-    
-    // Search query
     const matchText = `${m.court} ${m.venue} ${m.teamA.name} ${m.teamA.player1} ${m.teamA.player2 || ""} ${m.teamB.name} ${m.teamB.player1} ${m.teamB.player2 || ""}`.toLowerCase();
     const matchesSearch = !query || matchText.includes(query);
     return matchesVenue && matchesSearch;
+  });
+
+  // 2. Dynamically update tab count badges with matching results
+  updateTabCounts(query ? venueAndSearchMatches : allMatches, Boolean(query));
+
+  // 3. Filter by currentTab (All, Live, or Ended)
+  const filtered = venueAndSearchMatches.filter(m => {
+    if (currentTab === "LIVE" && (m.status === "FINISHED" || m.status === "ABANDONED")) return false;
+    if (currentTab === "ENDED" && !(m.status === "FINISHED" || m.status === "ABANDONED")) return false;
+    return true;
   });
 
   if (filtered.length === 0) {
@@ -94,7 +134,10 @@ function renderMatches() {
       const emptyTitle = emptyState.querySelector("h3");
       const emptyDesc = emptyState.querySelector("p");
       if (emptyTitle && emptyDesc) {
-        if (currentTab === "LIVE") {
+        if (query) {
+          emptyTitle.textContent = `No matches found for "${rawQuery}"`;
+          emptyDesc.textContent = "Try searching for a different court, player, or venue.";
+        } else if (currentTab === "LIVE") {
           emptyTitle.textContent = "No live ongoing matches right now";
           emptyDesc.textContent = "Courts are currently free. Register a new match to start scoring!";
         } else if (currentTab === "ENDED") {
@@ -102,7 +145,7 @@ function renderMatches() {
           emptyDesc.textContent = "As matches wrap up on court, their final scorecards will appear here.";
         } else {
           emptyTitle.textContent = "No matches found";
-          emptyDesc.textContent = "Try searching for a different court, player, or venue.";
+          emptyDesc.textContent = "Try adjusting your filters or register a new court.";
         }
       }
     }
@@ -324,12 +367,26 @@ document.addEventListener("DOMContentLoaded", () => {
       tabBtns.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
       currentTab = btn.dataset.tab;
+      if (!isSearching) {
+        savedTabBeforeSearch = currentTab;
+      }
       renderMatches();
     });
   });
 
   if (searchInput) searchInput.addEventListener("input", renderMatches);
   if (filterSelect) filterSelect.addEventListener("change", renderMatches);
+
+  const clearBtn = document.getElementById("search-clear-btn");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", () => {
+      if (searchInput) {
+        searchInput.value = "";
+        searchInput.focus();
+        renderMatches();
+      }
+    });
+  }
 
   const modal = document.getElementById("pin-modal");
   const closeBtn = document.getElementById("close-pin-modal");

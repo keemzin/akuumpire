@@ -83,6 +83,33 @@
       font-size: 0.95rem;
     }
 
+    .search-clear-btn {
+      position: absolute;
+      right: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      width: 22px;
+      height: 22px;
+      border-radius: 9999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-fast);
+      line-height: 1;
+    }
+
+    .search-clear-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      color: var(--text-primary);
+      border-color: var(--border-medium);
+    }
+
     /* Match Cards Grid */
     .matches-grid {
       display: grid;
@@ -400,6 +427,7 @@
       <div class="search-box">
         <span class="search-icon">🔍</span>
         <input type="text" id="search-input" placeholder="Search court, player name, or venue..." aria-label="Search matches" />
+        <button type="button" id="search-clear-btn" class="search-clear-btn" aria-label="Clear search" style="display: none;" title="Clear search">✕</button>
       </div>
       <div style="min-width: 200px;">
         <select id="filter-venue" class="form-select" style="min-width: 200px;" aria-label="Filter by venue">
