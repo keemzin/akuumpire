@@ -68,8 +68,13 @@ class MatchStore {
   /**
    * Seeds demo matches so the landing page immediately looks lively and ready to test!
    */
-  seedDemoIfEmpty() {
-    if (this.matches.size > 0) return;
+  /**
+   * Seeds demo matches so the landing page immediately looks lively and ready to test!
+   */
+  seedDemoIfEmpty(force = false) {
+    if (!force && this.matches.size > 0) return;
+
+    const now = new Date().toISOString();
 
     // Demo Match 1: Olympic / World Championship style Men's Singles
     const match1Id = "court-1-demo";
@@ -89,12 +94,14 @@ class MatchStore {
     match1State.currentScore = { teamA: 18, teamB: 17 };
     match1State.setsHistory = [{ set: 1, teamA: 21, teamB: 19, winner: "A" }];
     match1State.currentSet = 2;
+    match1State.createdAt = now;
+    match1State.updatedAt = now;
 
     this.matches.set(match1Id, {
       id: match1Id,
       adminPin: "1234",
       adminToken: "demo_token_court_1",
-      createdAt: new Date().toISOString(),
+      createdAt: now,
       matchState: match1State
     });
 
@@ -117,12 +124,14 @@ class MatchStore {
     match2State.status = "IN_PROGRESS";
     match2State.currentScore = { teamA: 14, teamB: 12 };
     match2State.currentSet = 1;
+    match2State.createdAt = now;
+    match2State.updatedAt = now;
 
     this.matches.set(match2Id, {
       id: match2Id,
       adminPin: "8888",
       adminToken: "demo_token_court_2",
-      createdAt: new Date().toISOString(),
+      createdAt: now,
       matchState: match2State
     });
 
@@ -186,8 +195,6 @@ class MatchStore {
     let modified = false;
 
     for (const [id, record] of this.matches.entries()) {
-      if (id.endsWith("-demo")) continue;
-
       const state = record.matchState;
       if (!state) continue;
 
@@ -195,7 +202,8 @@ class MatchStore {
       const updatedTime = new Date(state.updatedAt || record.createdAt).getTime();
 
       // Case 1: Warm-up court never started, AFK > 2 hours with 0 points scored
-      if (state.status === "NOT_STARTED") {
+      // (Do not delete demo courts from disk on warm-up)
+      if (state.status === "NOT_STARTED" && !id.endsWith("-demo")) {
         const hasNoPoints = (!state.currentScore || (state.currentScore.teamA === 0 && state.currentScore.teamB === 0)) &&
           (!state.setsHistory || state.setsHistory.length === 0);
         
@@ -207,6 +215,7 @@ class MatchStore {
       }
 
       // Case 2: Active match left AFK for > 3 hours with no score updates
+      // This applies to ALL matches (including demo courts that were left unattended)
       if (state.status === "IN_PROGRESS" || state.status === "INTERVAL" || state.status === "SET_ENDED") {
         if (now - updatedTime > THREE_HOURS_MS) {
           state.status = "ABANDONED";
@@ -229,6 +238,41 @@ class MatchStore {
     return Array.from(this.matches.values())
       .map(m => this.sanitizePublicState(m.matchState))
       .sort((a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime());
+  }
+
+  listAllRecordsForAdmin() {
+    this.reapStaleMatches();
+    return Array.from(this.matches.values()).map(r => {
+      const m = r.matchState;
+      const lastActionTime = m.updatedAt || r.createdAt;
+      const idleMinutes = Math.max(0, Math.floor((Date.now() - new Date(lastActionTime).getTime()) / 60000));
+      return {
+        id: r.id,
+        adminPin: r.adminPin,
+        adminToken: r.adminToken,
+        createdAt: r.createdAt,
+        updatedAt: m.updatedAt,
+        idleMinutes,
+        matchState: this.sanitizePublicState(m)
+      };
+    }).sort((a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime());
+  }
+
+  resetDemoMatches() {
+    this.seedDemoIfEmpty(true);
+    return true;
+  }
+
+  purgeHistory() {
+    let deletedCount = 0;
+    for (const [id, record] of this.matches.entries()) {
+      if (record.matchState?.status === "FINISHED" || record.matchState?.status === "ABANDONED") {
+        this.matches.delete(id);
+        deletedCount++;
+      }
+    }
+    if (deletedCount > 0) this.saveToDisk();
+    return deletedCount;
   }
 
   sanitizePublicState(matchState) {

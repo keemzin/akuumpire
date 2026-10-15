@@ -43,6 +43,10 @@ app.get("/umpire/:id", (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, "umpire.html"));
 });
 
+app.get("/superadmin", (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, "superadmin.html"));
+});
+
 // ==========================================
 // REST API
 // ==========================================
@@ -109,6 +113,86 @@ app.delete("/api/matches/:id", (req, res) => {
   io.to(`match:${req.params.id}`).emit("match:deleted", { matchId: req.params.id });
   io.emit("matches:list_updated", matchStore.listPublicMatches());
   res.json({ success: true });
+});
+
+// ==========================================
+// SUPER ADMIN API (Master PIN Protected)
+// ==========================================
+const SUPERADMIN_PIN = process.env.SUPERADMIN_PIN || "9999";
+
+function checkSuperAdmin(req, res, next) {
+  const pin = req.headers["x-superadmin-pin"] || req.query.superadminPin || req.body?.superadminPin;
+  if (!pin || String(pin).trim() !== SUPERADMIN_PIN) {
+    return res.status(401).json({ error: "Unauthorized: Invalid Super Admin PIN" });
+  }
+  next();
+}
+
+// Verify Super Admin Master PIN
+app.post("/api/superadmin/auth", (req, res) => {
+  const { pin } = req.body;
+  if (pin && String(pin).trim() === SUPERADMIN_PIN) {
+    res.json({ success: true, message: "Super Admin authorized" });
+  } else {
+    res.status(401).json({ error: "Invalid Super Admin Master PIN" });
+  }
+});
+
+// List all matches with full admin metadata & idle counters
+app.get("/api/superadmin/matches", checkSuperAdmin, (req, res) => {
+  res.json(matchStore.listAllRecordsForAdmin());
+});
+
+// Trigger AFK / Stale match reaper on demand
+app.post("/api/superadmin/reap", checkSuperAdmin, (req, res) => {
+  const modified = matchStore.reapStaleMatches();
+  if (modified) {
+    io.emit("matches:list_updated", matchStore.listPublicMatches());
+  }
+  res.json({ success: true, modified, matches: matchStore.listAllRecordsForAdmin() });
+});
+
+// Force delete any match
+app.delete("/api/superadmin/matches/:id", checkSuperAdmin, (req, res) => {
+  const id = req.params.id;
+  const existed = matchStore.deleteMatch(id);
+  if (existed) {
+    io.to(`match:${id}`).emit("match:deleted", { matchId: id });
+    io.emit("matches:list_updated", matchStore.listPublicMatches());
+  }
+  res.json({ success: true, id, existed });
+});
+
+// Force conclude or force abandon any match
+app.post("/api/superadmin/matches/:id/action", checkSuperAdmin, (req, res) => {
+  const { action, reason } = req.body;
+  const id = req.params.id;
+  const raw = matchStore.getRawRecord(id);
+  if (!raw) return res.status(404).json({ error: "Match not found" });
+
+  if (action === "ABANDON") {
+    abandonMatch(raw.matchState, reason || "Abandoned by Super Admin");
+  } else if (action === "CONCLUDE") {
+    concludeMatchEarly(raw.matchState, reason || "Concluded by Super Admin");
+  }
+  const updated = matchStore.updateMatchState(id, raw.matchState);
+  io.to(`match:${id}`).emit("match:updated", updated);
+  io.emit("matches:list_updated", matchStore.listPublicMatches());
+  res.json({ success: true, matchState: updated });
+});
+
+// Reset demo matches to fresh live action
+app.post("/api/superadmin/reset-demos", checkSuperAdmin, (req, res) => {
+  matchStore.resetDemoMatches();
+  io.emit("matches:list_updated", matchStore.listPublicMatches());
+  res.json({ success: true, message: "Demo courts reset to live action" });
+});
+
+// Purge all ended / abandoned match history
+app.post("/api/superadmin/purge-history", checkSuperAdmin, (req, res) => {
+  const count = matchStore.purgeHistory();
+  io.emit("matches:list_updated", matchStore.listPublicMatches());
+  res.json({ success: true, deletedCount: count });
 });
 
 // ==========================================

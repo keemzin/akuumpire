@@ -133,6 +133,14 @@
       align-items: center;
       gap: 0.5rem;
       font-size: 0.95rem;
+      white-space: nowrap;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .court-tag strong {
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .court-dot {
@@ -140,11 +148,99 @@
       height: 8px;
       border-radius: 50%;
       background: var(--accent-lime);
+      flex-shrink: 0;
     }
 
     .venue-sub {
       color: var(--text-muted);
       font-size: 0.85rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Information Detail Tooltip Badge */
+    .info-icon-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-size: 0.68rem;
+      font-weight: 800;
+      cursor: pointer;
+      margin-left: 0.4rem;
+      vertical-align: middle;
+      position: relative;
+      transition: all var(--transition-fast);
+      user-select: none;
+    }
+
+    .info-icon-badge:hover, .info-icon-badge:focus {
+      background: var(--bg-card);
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+      box-shadow: 0 0 8px rgba(6, 182, 212, 0.3);
+    }
+
+    .info-icon-badge .info-tooltip-text {
+      visibility: hidden;
+      opacity: 0;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 0;
+      transform: translateY(4px);
+      background: #0f172a;
+      color: var(--text-primary);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-md);
+      padding: 0.65rem 0.85rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      min-width: 160px;
+      max-width: 260px;
+      white-space: normal;
+      text-align: left;
+      line-height: 1.4;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.75);
+      pointer-events: none;
+      z-index: 100;
+      transition: opacity var(--transition-fast), transform var(--transition-fast), visibility var(--transition-fast);
+    }
+
+    .info-icon-badge .info-tooltip-text::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 6px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: #0f172a transparent transparent transparent;
+    }
+
+    .tooltip-sets {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      color: var(--text-secondary);
+      font-size: 0.78rem;
+    }
+
+    .tooltip-sets strong {
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    .info-icon-badge:hover .info-tooltip-text,
+    .info-icon-badge:focus .info-tooltip-text,
+    .info-icon-badge.active .info-tooltip-text {
+      visibility: visible;
+      opacity: 1;
+      transform: translateY(0);
     }
 
     .match-scoreboard-preview {
@@ -213,20 +309,29 @@
     .match-meta-info {
       display: flex;
       align-items: center;
-      gap: 0.6rem;
-      font-size: 0.8rem;
+      gap: 0.35rem;
+      font-size: 0.78rem;
       color: var(--text-secondary);
+      white-space: nowrap;
+      min-width: 0;
+    }
+
+    .set-indicator {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .card-btn-group {
       display: flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.35rem;
+      flex-shrink: 0;
     }
 
     .btn-sm {
-      padding: 0.4rem 0.85rem;
-      font-size: 0.8rem;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.78rem;
     }
 
     /* Empty state */
@@ -296,8 +401,8 @@
         <span class="search-icon">🔍</span>
         <input type="text" id="search-input" placeholder="Search court, player name, or venue..." aria-label="Search matches" />
       </div>
-      <div>
-        <select id="filter-venue" class="form-select" style="min-width: 170px;" aria-label="Filter by venue">
+      <div style="min-width: 200px;">
+        <select id="filter-venue" class="form-select" style="min-width: 200px;" aria-label="Filter by venue">
           <option value="ALL">All Venues</option>
         </select>
       </div>
@@ -391,6 +496,17 @@
       <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Be the first to register a match court! Zero signup required.</p>
       <a href="/admin" class="btn btn-primary">Start a Match Now</a>
     </div>
+
+    <footer style="margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; font-size: 0.85rem; color: var(--text-muted);">
+      <div>
+        <span>🏸 ShuttleLive — Open Arena Scoreboards</span>
+      </div>
+      <div style="display: flex; gap: 1rem; align-items: center;">
+        <a href="/admin" style="color: var(--text-secondary); text-decoration: none;">Register Court</a>
+        <span>•</span>
+        <a href="/superadmin" style="color: var(--text-secondary); text-decoration: none;" title="Master PIN Administration">🛡️ Super Admin</a>
+      </div>
+    </footer>
   </main>
 
   <!-- Enter Umpire PIN Modal -->

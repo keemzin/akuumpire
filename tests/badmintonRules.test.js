@@ -9,6 +9,7 @@ import {
   concludeMatchEarly,
   abandonMatch
 } from "../server/rules/badmintonRules.js";
+import { matchStore } from "../server/models/matchStore.js";
 
 test("creates initial match state correctly", () => {
   const match = createMatchState({
@@ -205,4 +206,25 @@ test("safeguards AFK court with early conclusion and abandon actions", () => {
   assert.equal(afkMatch.status, "ABANDONED");
   assert.equal(afkMatch.endedReason, "Inactivity timeout (3h AFK)");
   assert.ok(afkMatch.finishedAt);
+});
+
+test("super admin reaper correctly auto-archives matches idle > 3 hours", () => {
+  // Test matchStore listAllRecordsForAdmin
+  const allRecords = matchStore.listAllRecordsForAdmin();
+  assert.ok(Array.isArray(allRecords));
+
+  // Create an old idle match
+  const testMatch = matchStore.createMatch({ court: "Court Test Super" });
+  const raw = matchStore.getRawRecord(testMatch.id);
+  raw.matchState.status = "IN_PROGRESS";
+  raw.matchState.updatedAt = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(); // 4 hours ago
+
+  // Run reaper
+  matchStore.reapStaleMatches();
+  const reaped = matchStore.getPublicMatch(testMatch.id);
+  assert.equal(reaped.status, "ABANDONED");
+  assert.equal(reaped.endedReason, "Inactivity timeout (3h AFK)");
+
+  // Clean up
+  matchStore.deleteMatch(testMatch.id);
 });

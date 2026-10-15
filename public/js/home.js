@@ -135,15 +135,52 @@ function renderMatches() {
     const teamBPlayers = m.teamB.player2 ? `${m.teamB.player1} & ${m.teamB.player2}` : m.teamB.player1;
 
     const durationMins = getMatchDurationMinutes(m.createdAt, m.finishedAt || m.updatedAt);
-    const metaSummary = isAbandoned
-      ? `Abandoned • ⏱️ ${durationMins}m • ${m.endedReason || 'Inactivity'}`
-      : isFinished
-      ? `Final (${m.teamA.setsWon} - ${m.teamB.setsWon}) • ⏱️ ${durationMins}m`
-      : `Set ${m.currentSet} (${m.teamA.setsWon} - ${m.teamB.setsWon})`;
+    let metaSummary = "";
+    let infoBadge = "";
 
-    const setsBreakdown = (isFinished || isAbandoned) && m.setsHistory && m.setsHistory.length > 0
-      ? `<div class="history-sets-row">${m.setsHistory.map(s => `<span>S${s.set}: <strong>${s.teamA}-${s.teamB}</strong></span>`).join(' • ')}</div>`
-      : '';
+    if (isAbandoned) {
+      metaSummary = `Abandoned • ⏱️ ${durationMins}m`;
+    } else if (isFinished) {
+      metaSummary = `Final (${m.teamA.setsWon} - ${m.teamB.setsWon}) • ⏱️ ${durationMins}m`;
+    } else {
+      metaSummary = `Set ${m.currentSet} (${m.teamA.setsWon} - ${m.teamB.setsWon})`;
+    }
+
+    const formatName = m.rules?.name || (m.rules?.setsToWin > 1 ? 'BWF Standard (Best of 3 to 21)' : 'Single Set to 21');
+    const hasSetsHistory = m.setsHistory && m.setsHistory.length > 0;
+    const hasEndedReason = Boolean(m.endedReason);
+
+    if (isFinished || isAbandoned || hasSetsHistory || hasEndedReason) {
+      let tooltipContent = `
+        <div style="font-weight: 700; color: #fff; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 3px; font-size: 0.78rem;">
+          ${escapeHtml(formatName)}
+        </div>
+      `;
+
+      if (hasSetsHistory) {
+        tooltipContent += `
+          <div class="tooltip-sets" style="margin-top: 4px;">
+            <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 2px;">Set Breakdown</div>
+            ${m.setsHistory.map(s => `<div>Set ${s.set}: <strong>${s.teamA} - ${s.teamB}</strong></div>`).join('')}
+          </div>
+        `;
+      }
+
+      if (hasEndedReason) {
+        tooltipContent += `
+          <div style="margin-top: 6px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); color: #fca5a5; font-size: 0.72rem;">
+            <strong>Note:</strong> ${escapeHtml(m.endedReason)}
+          </div>
+        `;
+      }
+
+      infoBadge = `
+        <span class="info-icon-badge" tabindex="0" role="button" aria-label="Match Information">
+          ℹ
+          <span class="info-tooltip-text">${tooltipContent}</span>
+        </span>
+      `;
+    }
 
     const formatTag = m.rules?.shortName || (m.rules?.setsToWin > 1 ? 'Bo3 to 21' : '1 Set');
 
@@ -187,9 +224,9 @@ function renderMatches() {
         </div>
 
         <div class="match-card-footer">
-          <div class="match-meta-info" style="display: flex; flex-direction: column; gap: 0.25rem;">
+          <div class="match-meta-info">
             <span class="set-indicator" style="${isFinished ? 'color: var(--accent-gold); font-weight: 700;' : isAbandoned ? 'color: #f87171; font-weight: 700;' : ''}">${metaSummary}</span>
-            ${setsBreakdown}
+            ${infoBadge}
           </div>
           <div class="card-btn-group">
             <a href="/match/${m.id}" class="btn btn-secondary btn-sm">${isFinished || isAbandoned ? 'Scoreboard' : 'Watch TV'}</a>
@@ -214,6 +251,24 @@ function attachCardEvents() {
       openUmpirePinModal(matchId, courtName);
     });
   });
+
+  // Tap/click to toggle info tooltip on mobile or desktop
+  document.querySelectorAll(".info-icon-badge").forEach(badge => {
+    badge.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isActive = badge.classList.contains("active");
+      document.querySelectorAll(".info-icon-badge.active").forEach(b => b.classList.remove("active"));
+      if (!isActive) badge.classList.add("active");
+    });
+  });
+
+  // Clicking anywhere else dismisses open tooltips
+  if (!window._infoBadgeDismissRegistered) {
+    document.addEventListener("click", () => {
+      document.querySelectorAll(".info-icon-badge.active").forEach(b => b.classList.remove("active"));
+    });
+    window._infoBadgeDismissRegistered = true;
+  }
 }
 
 function openUmpirePinModal(matchId, courtName) {

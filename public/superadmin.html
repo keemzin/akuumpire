@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Admin — ShuttleLive Control Center</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Teko:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    .admin-container {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 3rem;
+    }
+
+    .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .admin-title-area h1 {
+      font-size: 1.75rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .admin-title-area p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-top: 0.25rem;
+    }
+
+    /* Stats Grid */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .stat-card .stat-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+    }
+
+    .stat-card .stat-value {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--text-primary);
+      font-family: var(--font-score);
+      line-height: 1;
+    }
+
+    /* Action Toolbar */
+    .admin-toolbar {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .search-filter-input {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      padding: 0.55rem 0.9rem;
+      font-size: 0.85rem;
+      min-width: 250px;
+    }
+
+    .search-filter-input:focus {
+      outline: none;
+      border-color: var(--accent-lime);
+    }
+
+    /* Matches Table */
+    .table-responsive {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow-x: auto;
+    }
+
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.88rem;
+    }
+
+    .admin-table th {
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      font-weight: 700;
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+      white-space: nowrap;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .admin-table td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+      vertical-align: middle;
+    }
+
+    .admin-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .pin-code-tag {
+      font-family: var(--font-score);
+      font-size: 1.1rem;
+      letter-spacing: 0.15em;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      padding: 0.15rem 0.5rem;
+      border-radius: var(--radius-sm);
+      color: var(--accent-cyan);
+      display: inline-block;
+    }
+
+    .row-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    /* Auth Screen Modal */
+    .pin-auth-box {
+      max-width: 400px;
+      margin: 8vh auto 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      box-shadow: var(--shadow-lg);
+      text-align: center;
+    }
+
+    .pin-auth-box h2 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+
+    .pin-auth-box p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .pin-auth-input {
+      width: 100%;
+      font-size: 1.8rem;
+      text-align: center;
+      letter-spacing: 0.35em;
+      font-family: var(--font-score);
+      padding: 0.75rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      margin-bottom: 1.25rem;
+    }
+
+    .pin-auth-input:focus {
+      outline: none;
+      border-color: var(--accent-lime);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Super Admin Auth Screen (Shown if unauthenticated) -->
+  <div id="auth-screen" style="display: none;">
+    <div class="pin-auth-box">
+      <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🛡️</div>
+      <h2>Super Admin Access</h2>
+      <p>Enter Master PIN to access court administration, cleanup tools, and force overrides.</p>
+      <form id="superadmin-login-form">
+        <input 
+          type="password" 
+          id="master-pin-input" 
+          class="pin-auth-input" 
+          placeholder="••••" 
+          maxlength="8" 
+          required 
+          autofocus
+        />
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          Authorize Super Admin
+        </button>
+      </form>
+      <div style="margin-top: 1.25rem;">
+        <a href="/" style="color: var(--text-muted); font-size: 0.85rem; text-decoration: none;">← Return to Scoreboards</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Super Admin Dashboard -->
+  <div id="dashboard-screen" style="display: none;">
+    <header class="navbar">
+      <a href="/" class="brand">
+        <div class="brand-icon">🏸</div>
+        <span>Shuttle<span style="color: var(--accent-lime);">Live</span> <span style="font-size: 0.75rem; color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 0.15rem 0.45rem; border-radius: 4px; margin-left: 0.5rem;">SUPER ADMIN</span></span>
+      </a>
+      <div class="nav-actions">
+        <a href="/" class="btn btn-secondary btn-sm">Scoreboards</a>
+        <button id="btn-logout" class="btn btn-secondary btn-sm" style="color: #f87171;">Log Out</button>
+      </div>
+    </header>
+
+    <main class="admin-container">
+      <div class="admin-header">
+        <div class="admin-title-area">
+          <h1><span>🛡️</span> Global Court Administration</h1>
+          <p>Monitor live court telemetry, resolve AFK/abandoned games, force end matches, and manage demo templates.</p>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <span class="stat-label">Total Courts</span>
+          <span class="stat-value" id="stat-total">0</span>
+        </div>
+        <div class="stat-card" style="border-color: rgba(34, 197, 94, 0.4);">
+          <span class="stat-label" style="color: var(--accent-lime);">Live & Warm-up</span>
+          <span class="stat-value" id="stat-live" style="color: var(--accent-lime);">0</span>
+        </div>
+        <div class="stat-card" style="border-color: rgba(245, 158, 11, 0.4);">
+          <span class="stat-label" style="color: #fbbf24;">Idle Courts (≥15m)</span>
+          <span class="stat-value" id="stat-idle" style="color: #fbbf24;">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Ended / Abandoned</span>
+          <span class="stat-value" id="stat-ended">0</span>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="admin-toolbar">
+        <div class="toolbar-actions">
+          <button id="btn-reap" class="btn btn-secondary btn-sm" title="Reap matches with >2h warm-up or >3h idle AFK">
+            <span>🧹 Run AFK Reaper</span>
+          </button>
+          <button id="btn-reset-demos" class="btn btn-secondary btn-sm" title="Reset Demo Courts 1 & 2 to live status">
+            <span>🔄 Reset Demo Courts</span>
+          </button>
+          <button id="btn-purge-history" class="btn btn-secondary btn-sm" style="color: #f87171;" title="Delete all ended and abandoned matches">
+            <span>🗑️ Purge Past History</span>
+          </button>
+        </div>
+        <div>
+          <input type="text" id="admin-search-input" class="search-filter-input" placeholder="Search court, player, PIN, or status..." />
+        </div>
+      </div>
+
+      <!-- Matches Table -->
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Court & Venue</th>
+              <th>Category & Rules</th>
+              <th>Status</th>
+              <th>Current Score</th>
+              <th>PIN / Credentials</th>
+              <th>Inactivity</th>
+              <th style="text-align: right;">Admin Overrides</th>
+            </tr>
+          </thead>
+          <tbody id="admin-table-body">
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading court data...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="/js/superadmin.js"></script>
+</body>
+</html>
