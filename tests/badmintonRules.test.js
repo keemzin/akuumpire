@@ -261,3 +261,52 @@ test("buildReplayFrames generates valid simulation frames from 0-0 to final scor
   assert.equal(lastFrame.winner, "B");
 });
 
+test("buildReplayFrames rejects truncated history and correctly starts at Set 1 0-0", () => {
+  const truncatedMatch = {
+    id: "court-3-cf0cd5",
+    status: "FINISHED",
+    winner: "B",
+    currentScore: { teamA: 18, teamB: 21 },
+    currentSet: 3,
+    setsHistory: [
+      { set: 1, teamA: 17, teamB: 21, winner: "B" },
+      { set: 2, teamA: 21, teamB: 7, winner: "A" },
+      { set: 3, teamA: 18, teamB: 21, winner: "B" }
+    ],
+    // Truncated undo stack (50 items starting at Set 2 11-6)
+    history: [
+      {
+        status: "INTERVAL",
+        currentSet: 2,
+        currentScore: { teamA: 11, teamB: 6 },
+        setsHistory: [{ set: 1, teamA: 17, teamB: 21, winner: "B" }],
+        servingTeam: "A"
+      },
+      {
+        status: "IN_PROGRESS",
+        currentSet: 2,
+        currentScore: { teamA: 12, teamB: 6 },
+        setsHistory: [{ set: 1, teamA: 17, teamB: 21, winner: "B" }],
+        servingTeam: "A"
+      }
+    ],
+    rules: { pointsPerSet: 21, maxPointsCap: 30, setsToWin: 2 },
+    teamA: { name: "Tigers", player1: "Alex Tan", player2: "Kenji Sato", setsWon: 1 },
+    teamB: { name: "Falcons", player1: "David Lim", player2: "Marcus Ray", setsWon: 2 }
+  };
+
+  const frames = buildReplayFrames(truncatedMatch);
+  assert.ok(Array.isArray(frames));
+
+  // Must start at Set 1 0-0, NOT at Set 2 11-6!
+  assert.equal(frames[0].currentSet, 1);
+  assert.equal(frames[0].currentScore.teamA, 0);
+  assert.equal(frames[0].currentScore.teamB, 0);
+  assert.deepEqual(frames[0].setsHistory, []);
+
+  // Final frame is finished
+  const last = frames[frames.length - 1];
+  assert.equal(last.isMatchEnd, true);
+  assert.equal(last.winner, "B");
+});
+

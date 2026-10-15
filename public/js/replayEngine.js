@@ -61,8 +61,20 @@ function getMatchIndicators(state) {
 export function buildReplayFrames(match) {
   if (!match) return [];
 
-  // 1. If we have recorded point-by-point history from live umpire scoring
-  if (Array.isArray(match.history) && match.history.length > 2) {
+  // Check if recorded history is a complete, untruncated match history starting at Set 1 (0-0)
+  const firstSnap = Array.isArray(match.history) && match.history.length > 0 ? match.history[0] : null;
+  const isFullMatchHistory = Boolean(
+    firstSnap &&
+    match.history.length > 2 &&
+    firstSnap.currentSet === 1 &&
+    firstSnap.currentScore &&
+    firstSnap.currentScore.teamA === 0 &&
+    firstSnap.currentScore.teamB === 0 &&
+    (!firstSnap.setsHistory || firstSnap.setsHistory.length === 0)
+  );
+
+  // 1. If we have full recorded point-by-point history from live umpire scoring
+  if (isFullMatchHistory) {
     const frames = match.history.map((snap, idx) => {
       const indicators = getMatchIndicators({
         currentScore: snap.currentScore,
@@ -149,7 +161,7 @@ export function buildReplayFrames(match) {
     note: "Match starts • 0 - 0"
   });
 
-  setsToSimulate.forEach((setInfo) => {
+  setsToSimulate.forEach((setInfo, setIdx) => {
     const setNum = setInfo.set;
     const targetA = setInfo.targetA;
     const targetB = setInfo.targetB;
@@ -157,8 +169,24 @@ export function buildReplayFrames(match) {
     let scoreA = 0;
     let scoreB = 0;
 
-    // Build random walk rally sequence to reach targetA - targetB
-    const pointSequence = generateRallySequence(targetA, targetB);
+    // Start frame for Set 2, Set 3, etc.
+    if (setIdx > 0) {
+      frames.push({
+        frameIndex: frames.length,
+        status: "IN_PROGRESS",
+        currentSet: setNum,
+        currentScore: { teamA: 0, teamB: 0 },
+        servingTeam: currentServingTeam,
+        setsHistory: [...setsHistoryAccumulator],
+        teamA: { ...match.teamA, setsWon: setsWonA },
+        teamB: { ...match.teamB, setsWon: setsWonB },
+        indicators: { isGamePoint: false, isMatchPoint: false, isDeuce: false },
+        note: `Set ${setNum} starts • 0 - 0`
+      });
+    }
+
+    // Build realistic rally sequence to reach targetA - targetB
+    const pointSequence = generateRallySequence(targetA, targetB, setInfo.winner);
 
     pointSequence.forEach((scoringTeam, ptIndex) => {
       if (scoringTeam === "A") scoreA++;
@@ -249,10 +277,13 @@ export function buildReplayFrames(match) {
 /**
  * Generates a realistic distribution of rallies that lands on targetA & targetB.
  */
-function generateRallySequence(targetA, targetB) {
+function generateRallySequence(targetA, targetB, winner) {
   const points = [];
-  let aRemaining = targetA;
-  let bRemaining = targetB;
+  const winSide = winner || (targetA > targetB ? "A" : "B");
+
+  // The set winner must score the final set-winning point
+  let aRemaining = winSide === "A" ? Math.max(0, targetA - 1) : targetA;
+  let bRemaining = winSide === "B" ? Math.max(0, targetB - 1) : targetB;
 
   while (aRemaining > 0 || bRemaining > 0) {
     if (aRemaining === 0) {
@@ -274,6 +305,8 @@ function generateRallySequence(targetA, targetB) {
     }
   }
 
+  // Final set-winning point
+  points.push(winSide);
   return points;
 }
 

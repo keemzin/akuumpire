@@ -226,7 +226,7 @@ export function addPoint(state, scoringTeam) {
     teamB: state.teamB
   }));
   state.history.push(snapshot);
-  if (state.history.length > 50) state.history.shift(); // Limit undo stack
+  if (state.history.length > 500) state.history.shift(); // Limit undo stack (500 points easily covers full 3-set match)
 
   if (state.status === "NOT_STARTED") {
     state.status = "IN_PROGRESS";
