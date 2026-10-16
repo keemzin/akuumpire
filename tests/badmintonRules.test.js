@@ -29,6 +29,16 @@ test("creates initial match state correctly", () => {
   assert.equal(match.servingTeam, "A");
   assert.equal(match.currentSet, 1);
   assert.equal(match.status, "NOT_STARTED");
+  assert.equal(match.teamA.logo, null);
+  assert.equal(match.teamB.logo, null);
+
+  const matchWithLogos = createMatchState({
+    id: "match-logos",
+    teamALogo: "https://example.com/logo-a.webp",
+    teamBLogo: "https://example.com/logo-b.webp"
+  });
+  assert.equal(matchWithLogos.teamA.logo, "https://example.com/logo-a.webp");
+  assert.equal(matchWithLogos.teamB.logo, "https://example.com/logo-b.webp");
 });
 
 test("updates points and handles serve change on receiving point", () => {

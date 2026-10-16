@@ -280,24 +280,42 @@ function updateConsoleUI(match) {
   const nameA = document.getElementById("pad-team-a-name");
   const subA = document.getElementById("pad-team-a-sub");
   const scoreA = document.getElementById("pad-score-a");
+  const logoA = document.getElementById("pad-team-a-logo");
 
   const isServingA = match.servingTeam === "A";
   if (padA) padA.classList.toggle("serving-side", isServingA);
   if (nameA) nameA.textContent = match.teamA.name;
   if (subA) subA.textContent = match.teamA.player2 ? `${match.teamA.player1} & ${match.teamA.player2}` : match.teamA.player1;
   if (scoreA) scoreA.textContent = match.currentScore.teamA;
+  if (logoA) {
+    if (match.teamA?.logo) {
+      logoA.src = match.teamA.logo;
+      logoA.style.display = "inline-block";
+    } else {
+      logoA.style.display = "none";
+    }
+  }
 
   // Pad B
   const padB = document.getElementById("pad-team-b");
   const nameB = document.getElementById("pad-team-b-name");
   const subB = document.getElementById("pad-team-b-sub");
   const scoreB = document.getElementById("pad-score-b");
+  const logoB = document.getElementById("pad-team-b-logo");
 
   const isServingB = match.servingTeam === "B";
   if (padB) padB.classList.toggle("serving-side", isServingB);
   if (nameB) nameB.textContent = match.teamB.name;
   if (subB) subB.textContent = match.teamB.player2 ? `${match.teamB.player1} & ${match.teamB.player2}` : match.teamB.player1;
   if (scoreB) scoreB.textContent = match.currentScore.teamB;
+  if (logoB) {
+    if (match.teamB?.logo) {
+      logoB.src = match.teamB.logo;
+      logoB.style.display = "inline-block";
+    } else {
+      logoB.style.display = "none";
+    }
+  }
 
   // Action Buttons visibility
   const nextSetBtn = document.getElementById("btn-next-set");

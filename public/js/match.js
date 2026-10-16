@@ -126,6 +126,17 @@ function renderScoreboard(match) {
   const scoreAEl = document.getElementById("disp-score-a");
   const servingAEl = document.getElementById("serving-a-indicator");
   const panelA = document.getElementById("panel-team-a");
+  const logoAWrapper = document.getElementById("disp-team-a-logo");
+  const logoAImg = document.getElementById("team-a-logo-img");
+
+  if (logoAWrapper && logoAImg) {
+    if (match.teamA?.logo) {
+      logoAImg.src = match.teamA.logo;
+      logoAWrapper.style.display = "flex";
+    } else {
+      logoAWrapper.style.display = "none";
+    }
+  }
 
   const pAStr = match.teamA.player2 ? `${match.teamA.player1} / ${match.teamA.player2}` : match.teamA.player1;
   if (teamAName) {
@@ -160,6 +171,17 @@ function renderScoreboard(match) {
   const scoreBEl = document.getElementById("disp-score-b");
   const servingBEl = document.getElementById("serving-b-indicator");
   const panelB = document.getElementById("panel-team-b");
+  const logoBWrapper = document.getElementById("disp-team-b-logo");
+  const logoBImg = document.getElementById("team-b-logo-img");
+
+  if (logoBWrapper && logoBImg) {
+    if (match.teamB?.logo) {
+      logoBImg.src = match.teamB.logo;
+      logoBWrapper.style.display = "flex";
+    } else {
+      logoBWrapper.style.display = "none";
+    }
+  }
 
   const pBStr = match.teamB.player2 ? `${match.teamB.player1} / ${match.teamB.player2}` : match.teamB.player1;
   if (teamBName) {

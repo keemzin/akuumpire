@@ -4,4 +4,5 @@ node_modules/
 data/matches.json
 .env
 .env.local
+public/uploads/
 sampahjer/

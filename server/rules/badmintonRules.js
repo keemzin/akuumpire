@@ -91,6 +91,7 @@ export function createMatchState(config) {
     name: config.teamAName || "Team A",
     player1: config.teamAPlayer1 || "Player 1",
     player2: isDoubles ? (config.teamAPlayer2 || "Player 2") : null,
+    logo: config.teamALogo || null,
     setsWon: 0,
     color: config.teamAColor || "#22c55e" // Emerald green
   };
@@ -99,6 +100,7 @@ export function createMatchState(config) {
     name: config.teamBName || "Team B",
     player1: config.teamBPlayer1 || "Player 1",
     player2: isDoubles ? (config.teamBPlayer2 || "Player 2") : null,
+    logo: config.teamBLogo || null,
     setsWon: 0,
     color: config.teamBColor || "#3b82f6" // Electric blue
   };

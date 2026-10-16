@@ -194,6 +194,59 @@
   box-shadow: 0 0 12px var(--accent-gold-glow);
 }
 
+/* Team Header Layout with Team / Club Logo */
+.team-header-layout {
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+}
+
+.team-header-layout-b {
+  justify-content: flex-end;
+}
+
+.team-logo-badge {
+  width: 58px;
+  height: 58px;
+  min-width: 58px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 5px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.team-logo-badge img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+@media (min-width: 1200px) {
+  .team-logo-badge {
+    width: 68px;
+    height: 68px;
+    min-width: 68px;
+  }
+}
+
+@media (max-width: 768px) {
+  .team-logo-badge {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+  }
+  .team-header-layout {
+    gap: 0.75rem;
+  }
+}
+
 .team-meta {
   display: flex;
   align-items: center;
@@ -264,9 +317,60 @@
   to { transform: translateY(-3px); }
 }
 
-/* Large LED Score Digits */
+/* Team Score Row & Floating Emblem Layout */
+.score-row-wrapper {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.75rem, 2vw, 1.5rem);
+  margin: 1.25rem 0;
+  width: 100%;
+}
+
+.score-row-wrapper.side-a {
+  justify-content: flex-start;
+}
+
+.score-row-wrapper.side-b {
+  justify-content: flex-end;
+}
+
+/* Stadium Emblem: Height locked to LED score font; Width auto-expands up to 220px for wide banners */
+.stadium-logo-badge {
+  display: flex;
+  align-items: center;
+  height: clamp(3.6rem, 14vw, 6.5rem);
+  width: auto;
+  max-width: clamp(140px, 22vw, 220px);
+  flex-shrink: 1;
+  position: relative;
+  background: transparent;
+}
+
+.side-a .stadium-logo-badge {
+  justify-content: flex-start;
+}
+
+.side-b .stadium-logo-badge {
+  justify-content: flex-end;
+}
+
+.stadium-logo-badge img {
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.65));
+  transition: transform var(--transition-fast);
+}
+
 .score-box {
-  margin: 1.5rem 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.55ch; /* Zero layout shift when transitioning 9 -> 10 -> 21 */
 }
 
 .score-digit {

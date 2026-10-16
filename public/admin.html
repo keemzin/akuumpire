@@ -97,6 +97,222 @@
       background: rgba(34, 197, 94, 0.1);
     }
 
+    /* Logo Upload Dropzone */
+    .logo-upload-wrapper {
+      position: relative;
+    }
+
+    .logo-dropzone {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 0.6rem 0.85rem;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      user-select: none;
+    }
+
+    .logo-dropzone:hover {
+      border-color: var(--accent-lime);
+      background: rgba(34, 197, 94, 0.06);
+    }
+
+    .team-b .logo-dropzone:hover {
+      border-color: var(--accent-cyan);
+      background: rgba(59, 130, 246, 0.06);
+    }
+
+    .logo-dropzone-icon {
+      font-size: 1.15rem;
+      line-height: 1;
+    }
+
+    .logo-dropzone-text {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .logo-preview-box {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 0.45rem 0.75rem;
+    }
+
+    .logo-preview-img {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+      border-radius: var(--radius-sm);
+      background: rgba(0, 0, 0, 0.25);
+      padding: 2px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .logo-preview-info {
+      flex: 1;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn-remove-logo {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition-fast);
+      line-height: 1;
+    }
+
+    .btn-remove-logo:hover {
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.12);
+    }
+
+    /* Logo Info Bubble & Popover */
+    .logo-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.35rem;
+    }
+
+    .info-bubble-wrap {
+      position: relative;
+      display: inline-block;
+    }
+
+    .info-bubble-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      user-select: none;
+    }
+
+    .info-bubble-btn:hover,
+    .info-bubble-wrap:focus-within .info-bubble-btn,
+    .info-bubble-wrap.active .info-bubble-btn {
+      color: var(--accent-cyan);
+      border-color: rgba(56, 189, 248, 0.4);
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    .info-bubble-popover {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      width: 310px;
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-lg);
+      padding: 1rem;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65), 0 0 20px rgba(56, 189, 248, 0.15);
+      z-index: 100;
+      backdrop-filter: blur(16px);
+      text-align: left;
+    }
+
+    .info-bubble-wrap:hover .info-bubble-popover,
+    .info-bubble-wrap:focus-within .info-bubble-popover,
+    .info-bubble-wrap.active .info-bubble-popover {
+      display: block;
+      animation: popover-fade 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes popover-fade {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .popover-header {
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      letter-spacing: 0.02em;
+    }
+
+    .popover-formats-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .popover-format-item {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 0.55rem 0.7rem;
+    }
+
+    .popover-format-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.25rem;
+    }
+
+    .format-type-tag {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .format-size-tag {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--accent-lime);
+      background: rgba(34, 197, 94, 0.1);
+      padding: 0.1rem 0.4rem;
+      border-radius: var(--radius-sm);
+    }
+
+    .format-desc {
+      font-size: 0.73rem;
+      color: var(--text-secondary);
+      line-height: 1.35;
+    }
+
+    .popover-footer-tip {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 0.55rem;
+      line-height: 1.4;
+    }
+
+    .popover-footer-tip strong {
+      color: #fbbf24;
+    }
+
     /* Modal for PIN celebration */
     .pin-callout-box {
       background: rgba(34, 197, 94, 0.1);
@@ -257,6 +473,64 @@
               <label class="form-label" for="team-a-name">Team / Club Tag</label>
               <input type="text" id="team-a-name" class="form-input" placeholder="e.g. Red Tigers / MAS" value="Tigers" required />
             </div>
+
+            <!-- Team A Logo Upload -->
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+              <div class="logo-label-row">
+                <label class="form-label" style="margin-bottom: 0;">Team / Club Logo</label>
+                <div class="info-bubble-wrap">
+                  <button type="button" class="info-bubble-btn" aria-label="Logo size recommendations">
+                    <span>ⓘ</span>
+                    <span>Size Guide</span>
+                  </button>
+                  <div class="info-bubble-popover">
+                    <div class="popover-header">
+                      <span>📐</span>
+                      <span>Recommended Logo Formats</span>
+                    </div>
+                    <div class="popover-formats-grid">
+                      <div class="popover-format-item">
+                        <div class="popover-format-title-row">
+                          <span class="format-type-tag">🛡️ Square / Crest</span>
+                          <span class="format-size-tag">1:1 (~200×200)</span>
+                        </div>
+                        <div class="format-desc">
+                          Matches score number height. Best for club shields, emblems, and circular badges.
+                        </div>
+                      </div>
+                      <div class="popover-format-item">
+                        <div class="popover-format-title-row">
+                          <span class="format-type-tag">🏷️ Wide Banner</span>
+                          <span class="format-size-tag">3:1 to 5:1 (~400×100)</span>
+                        </div>
+                        <div class="format-desc">
+                          Expands horizontally. Best for club names, tournament sponsors & horizontal wordmarks.
+                        </div>
+                      </div>
+                    </div>
+                    <div class="popover-footer-tip">
+                      ✨ <strong>Auto-Clean:</strong> Solid white backgrounds are automatically erased to transparent!
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="logo-upload-wrapper">
+                <input type="file" id="team-a-logo-input" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display: none;" />
+                <input type="hidden" id="team-a-logo-url" />
+                
+                <div class="logo-dropzone" id="team-a-logo-dropzone">
+                  <span class="logo-dropzone-icon">📷</span>
+                  <span class="logo-dropzone-text">Upload Logo / Badge</span>
+                </div>
+
+                <div class="logo-preview-box" id="team-a-logo-preview" style="display: none;">
+                  <img src="" alt="Team A Logo" class="logo-preview-img" id="team-a-logo-img" />
+                  <span class="logo-preview-info" id="team-a-logo-info">Ready</span>
+                  <button type="button" class="btn-remove-logo" id="team-a-logo-remove" title="Remove logo">✕</button>
+                </div>
+              </div>
+            </div>
+
             <div class="form-group">
               <label class="form-label" for="team-a-player-1">Player 1</label>
               <input type="text" id="team-a-player-1" class="form-input" placeholder="e.g. Alex Tan" value="Alex Tan" required />
@@ -274,6 +548,64 @@
               <label class="form-label" for="team-b-name">Team / Club Tag</label>
               <input type="text" id="team-b-name" class="form-input" placeholder="e.g. Blue Falcons / SGP" value="Falcons" required />
             </div>
+
+            <!-- Team B Logo Upload -->
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+              <div class="logo-label-row">
+                <label class="form-label" style="margin-bottom: 0;">Team / Club Logo</label>
+                <div class="info-bubble-wrap">
+                  <button type="button" class="info-bubble-btn" aria-label="Logo size recommendations">
+                    <span>ⓘ</span>
+                    <span>Size Guide</span>
+                  </button>
+                  <div class="info-bubble-popover">
+                    <div class="popover-header">
+                      <span>📐</span>
+                      <span>Recommended Logo Formats</span>
+                    </div>
+                    <div class="popover-formats-grid">
+                      <div class="popover-format-item">
+                        <div class="popover-format-title-row">
+                          <span class="format-type-tag">🛡️ Square / Crest</span>
+                          <span class="format-size-tag">1:1 (~200×200)</span>
+                        </div>
+                        <div class="format-desc">
+                          Matches score number height. Best for club shields, emblems, and circular badges.
+                        </div>
+                      </div>
+                      <div class="popover-format-item">
+                        <div class="popover-format-title-row">
+                          <span class="format-type-tag">🏷️ Wide Banner</span>
+                          <span class="format-size-tag">3:1 to 5:1 (~400×100)</span>
+                        </div>
+                        <div class="format-desc">
+                          Expands horizontally. Best for club names, tournament sponsors & horizontal wordmarks.
+                        </div>
+                      </div>
+                    </div>
+                    <div class="popover-footer-tip">
+                      ✨ <strong>Auto-Clean:</strong> Solid white backgrounds are automatically erased to transparent!
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="logo-upload-wrapper">
+                <input type="file" id="team-b-logo-input" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display: none;" />
+                <input type="hidden" id="team-b-logo-url" />
+                
+                <div class="logo-dropzone" id="team-b-logo-dropzone">
+                  <span class="logo-dropzone-icon">📷</span>
+                  <span class="logo-dropzone-text">Upload Logo / Badge</span>
+                </div>
+
+                <div class="logo-preview-box" id="team-b-logo-preview" style="display: none;">
+                  <img src="" alt="Team B Logo" class="logo-preview-img" id="team-b-logo-img" />
+                  <span class="logo-preview-info" id="team-b-logo-info">Ready</span>
+                  <button type="button" class="btn-remove-logo" id="team-b-logo-remove" title="Remove logo">✕</button>
+                </div>
+              </div>
+            </div>
+
             <div class="form-group">
               <label class="form-label" for="team-b-player-1">Player 1</label>
               <input type="text" id="team-b-player-1" class="form-input" placeholder="e.g. David Lim" value="David Lim" required />
