@@ -1,7 +1,15 @@
 # 🏸 ShuttleLive — Real-Time Badminton Arena Scoreboard
 
 > **Instant, frictionless, stadium-grade live badminton scoreboard for clubs, tournament organizers, and court-side TVs.**  
-> Completely free, zero account registration required. Powered by auto-generated 4-digit PINs and real-time WebSockets.
+> Completely free, zero account registration required. Powered by auto-generated 4-digit PINs, Supabase cloud persistence, and real-time WebSockets.
+
+[![Live Demo](https://img.shields.io/badge/Live_Demo-akuumpire.onrender.com-brightgreen?style=for-the-badge&logo=render)](https://akuumpire.onrender.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
+[![Node Version](https://img.shields.io/badge/Node-18.x_%7C_20.x_%7C_22.x-green?style=for-the-badge&logo=node.js)](package.json)
+[![Database](https://img.shields.io/badge/Database-Supabase_PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.com)
+
+👉 **Experience the Live Stadium Demo:** [**https://akuumpire.onrender.com/**](https://akuumpire.onrender.com/)  
+*(Tip: Open the link on your laptop as the TV scoreboard and on your phone as the Umpire Controller to watch scores sync instantly with < 50ms latency!)*
 
 ---
 
@@ -39,6 +47,9 @@ graph TD
 ---
 
 ## 🚀 Quick Start
+
+> **Want to test immediately without cloning or installing?**  
+> Jump straight to the live hosted demo at **[https://akuumpire.onrender.com/](https://akuumpire.onrender.com/)**.
 
 ### Prerequisites
 - Node.js 18.x or newer
