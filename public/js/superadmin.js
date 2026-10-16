@@ -19,11 +19,11 @@ const btnResetDemos = document.getElementById("btn-reset-demos");
 const btnPurgeHistory = document.getElementById("btn-purge-history");
 
 let allAdminMatches = [];
-let masterPin = localStorage.getItem("shuttle_superadmin_pin") || "";
+let superadminToken = localStorage.getItem("shuttle_superadmin_token") || localStorage.getItem("shuttle_superadmin_pin") || "";
 
 function checkAuth() {
-  if (masterPin) {
-    verifyAndLoad(masterPin);
+  if (superadminToken) {
+    fetchAdminMatches();
   } else {
     showAuth();
   }
@@ -41,26 +41,31 @@ function showAuth() {
 function showDashboard() {
   authScreen.style.display = "none";
   dashboardScreen.style.display = "block";
-  fetchAdminMatches();
 }
 
-async function verifyAndLoad(pin) {
+async function verifyAndLoad(secret) {
   try {
     const res = await fetch("/api/superadmin/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pin })
+      body: JSON.stringify({ secret, pin: secret })
     });
 
-    if (res.ok) {
-      masterPin = pin;
-      localStorage.setItem("shuttle_superadmin_pin", pin);
-      showDashboard();
-    } else {
+    const data = await res.json().catch(() => ({}));
+
+    if (res.ok && data.token) {
+      superadminToken = data.token;
+      localStorage.setItem("shuttle_superadmin_token", data.token);
       localStorage.removeItem("shuttle_superadmin_pin");
-      masterPin = "";
+      showDashboard();
+      fetchAdminMatches();
+      showToast("Super Admin authorized", "success");
+    } else {
+      localStorage.removeItem("shuttle_superadmin_token");
+      localStorage.removeItem("shuttle_superadmin_pin");
+      superadminToken = "";
       showAuth();
-      showToast("Invalid Master PIN", "error");
+      showToast(data.error || "Invalid Super Admin credentials", "error");
     }
   } catch (err) {
     showToast("Error connecting to server", "error");
@@ -69,23 +74,30 @@ async function verifyAndLoad(pin) {
 }
 
 async function fetchAdminMatches() {
-  if (!masterPin) return;
+  if (!superadminToken) {
+    showAuth();
+    return;
+  }
 
   try {
     const res = await fetch("/api/superadmin/matches", {
-      headers: { "x-superadmin-pin": masterPin }
+      headers: { "x-superadmin-token": superadminToken }
     });
 
     if (!res.ok) {
       if (res.status === 401) {
+        localStorage.removeItem("shuttle_superadmin_token");
         localStorage.removeItem("shuttle_superadmin_pin");
+        superadminToken = "";
         showAuth();
+        showToast("Session expired. Please log in again.", "warning");
         return;
       }
       throw new Error("Failed to load match data");
     }
 
     allAdminMatches = await res.json();
+    showDashboard();
     updateStats();
     renderTable();
   } catch (err) {
@@ -205,7 +217,7 @@ function attachTableEvents() {
       try {
         const res = await fetch(`/api/superadmin/matches/${matchId}`, {
           method: "DELETE",
-          headers: { "x-superadmin-pin": masterPin }
+          headers: { "x-superadmin-token": superadminToken }
         });
         if (!res.ok) throw new Error("Delete failed");
         showToast(`Court ${courtName} deleted`, "info");
@@ -226,7 +238,7 @@ function attachTableEvents() {
           method: "POST",
           headers: { 
             "Content-Type": "application/json",
-            "x-superadmin-pin": masterPin 
+            "x-superadmin-token": superadminToken 
           },
           body: JSON.stringify({ action: "CONCLUDE", reason: "Concluded by Super Admin" })
         });
@@ -249,7 +261,7 @@ function attachTableEvents() {
           method: "POST",
           headers: { 
             "Content-Type": "application/json",
-            "x-superadmin-pin": masterPin 
+            "x-superadmin-token": superadminToken 
           },
           body: JSON.stringify({ action: "ABANDON", reason: "Abandoned by Super Admin" })
         });
@@ -276,16 +288,32 @@ function escapeHtml(str) {
 if (loginForm) {
   loginForm.addEventListener("submit", (e) => {
     e.preventDefault();
-    const pin = masterPinInput.value.trim();
-    if (!pin) return;
-    verifyAndLoad(pin);
+    const secret = masterPinInput.value.trim();
+    if (!secret) return;
+    verifyAndLoad(secret);
+  });
+}
+
+const togglePasswordBtn = document.getElementById("toggle-password-btn");
+if (togglePasswordBtn && masterPinInput) {
+  togglePasswordBtn.addEventListener("click", () => {
+    const isPw = masterPinInput.type === "password";
+    masterPinInput.type = isPw ? "text" : "password";
+    togglePasswordBtn.textContent = isPw ? "🙈" : "👁️";
   });
 }
 
 if (logoutBtn) {
-  logoutBtn.addEventListener("click", () => {
+  logoutBtn.addEventListener("click", async () => {
+    try {
+      await fetch("/api/superadmin/logout", {
+        method: "POST",
+        headers: { "x-superadmin-token": superadminToken }
+      });
+    } catch (e) {}
+    localStorage.removeItem("shuttle_superadmin_token");
     localStorage.removeItem("shuttle_superadmin_pin");
-    masterPin = "";
+    superadminToken = "";
     showAuth();
     showToast("Logged out of Super Admin", "info");
   });
@@ -303,7 +331,7 @@ if (btnReap) {
       btnReap.textContent = "Running Reaper...";
       const res = await fetch("/api/superadmin/reap", {
         method: "POST",
-        headers: { "x-superadmin-pin": masterPin }
+        headers: { "x-superadmin-token": superadminToken }
       });
       const data = await res.json();
       showToast(`AFK Reaper ran: ${data.modified ? 'stale matches cleaned' : 'all courts active & healthy'}`, "info");
@@ -323,7 +351,7 @@ if (btnResetDemos) {
     try {
       const res = await fetch("/api/superadmin/reset-demos", {
         method: "POST",
-        headers: { "x-superadmin-pin": masterPin }
+        headers: { "x-superadmin-token": superadminToken }
       });
       if (!res.ok) throw new Error("Reset failed");
       showToast("Demo courts reset to live status", "success");
@@ -340,7 +368,7 @@ if (btnPurgeHistory) {
     try {
       const res = await fetch("/api/superadmin/purge-history", {
         method: "POST",
-        headers: { "x-superadmin-pin": masterPin }
+        headers: { "x-superadmin-token": superadminToken }
       });
       const data = await res.json();
       showToast(`Purged ${data.deletedCount} past matches`, "info");

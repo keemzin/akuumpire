@@ -1,6 +1,7 @@
 import express from "express";
 import http from "node:http";
 import path from "node:path";
+import crypto from "node:crypto";
 import cors from "cors";
 import { Server } from "socket.io";
 import { matchStore } from "./models/matchStore.js";
@@ -116,27 +117,136 @@ app.delete("/api/matches/:id", (req, res) => {
 });
 
 // ==========================================
-// SUPER ADMIN API (Master PIN Protected)
+// SUPER ADMIN SECURITY & AUTHENTICATION
 // ==========================================
-const SUPERADMIN_PIN = process.env.SUPERADMIN_PIN || "9999";
+// Supports arbitrary length: SUPERADMIN_PASSWORD, SUPERADMIN_KEY, or legacy SUPERADMIN_PIN
+const SUPERADMIN_SECRET = process.env.SUPERADMIN_PASSWORD || 
+                          process.env.SUPERADMIN_KEY || 
+                          process.env.SUPERADMIN_PIN || 
+                          "9999";
 
-function checkSuperAdmin(req, res, next) {
-  const pin = req.headers["x-superadmin-pin"] || req.query.superadminPin || req.body?.superadminPin;
-  if (!pin || String(pin).trim() !== SUPERADMIN_PIN) {
-    return res.status(401).json({ error: "Unauthorized: Invalid Super Admin PIN" });
-  }
-  next();
+// Timing-safe constant-time string comparison via SHA-256 (safe for any length)
+function timingSafeVerify(input, target) {
+  if (typeof input !== "string" || typeof target !== "string") return false;
+  const a = crypto.createHash("sha256").update(input.trim()).digest();
+  const b = crypto.createHash("sha256").update(target.trim()).digest();
+  return crypto.timingSafeEqual(a, b);
 }
 
-// Verify Super Admin Master PIN
+// Active session token store: token -> { expiresAt }
+const superadminSessions = new Map();
+const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
+
+// Brute-force protection & rate limiting per IP
+const loginAttempts = new Map(); // ip -> { count, lockedUntil }
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS = 15 * 60 * 1000; // 15-minute lockout
+
+function getClientIp(req) {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return req.socket?.remoteAddress || "127.0.0.1";
+}
+
+function checkSuperAdmin(req, res, next) {
+  const authHeader = req.headers["authorization"] || "";
+  const token = req.headers["x-superadmin-token"] || 
+                req.headers["x-superadmin-pin"] || 
+                req.query.superadminPin || 
+                req.body?.superadminPin ||
+                (authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : null);
+
+  if (!token) {
+    return res.status(401).json({ error: "Unauthorized: Missing Super Admin credentials" });
+  }
+
+  // 1. Check if token is an active authenticated session
+  const session = superadminSessions.get(token);
+  if (session) {
+    if (Date.now() < session.expiresAt) {
+      return next();
+    } else {
+      superadminSessions.delete(token);
+    }
+  }
+
+  // 2. Direct master key fallback (for scripts / cURL / automation)
+  if (timingSafeVerify(token, SUPERADMIN_SECRET)) {
+    return next();
+  }
+
+  return res.status(401).json({ error: "Unauthorized: Invalid or expired Super Admin credentials" });
+}
+
+// Verify Super Admin credentials and issue temporary session token with brute-force lockout
 app.post("/api/superadmin/auth", (req, res) => {
-  const { pin } = req.body;
-  if (pin && String(pin).trim() === SUPERADMIN_PIN) {
-    res.json({ success: true, message: "Super Admin authorized" });
+  const ip = getClientIp(req);
+  const now = Date.now();
+
+  // Check lockout
+  const attemptInfo = loginAttempts.get(ip);
+  if (attemptInfo && attemptInfo.lockedUntil && now < attemptInfo.lockedUntil) {
+    const remainingMins = Math.ceil((attemptInfo.lockedUntil - now) / 60000);
+    return res.status(429).json({
+      error: `Too many failed attempts. Locked out for ${remainingMins} more minute${remainingMins === 1 ? '' : 's'}.`
+    });
+  }
+
+  const { pin, password, secret } = req.body;
+  const inputSecret = String(secret || password || pin || "");
+
+  if (timingSafeVerify(inputSecret, SUPERADMIN_SECRET)) {
+    // Reset failed attempts on success
+    loginAttempts.delete(ip);
+
+    // Issue cryptographic random session token (never stores master secret in browser)
+    const token = "sa_" + crypto.randomBytes(32).toString("hex");
+    const expiresAt = now + SESSION_TTL_MS;
+    superadminSessions.set(token, { expiresAt });
+
+    return res.json({
+      success: true,
+      token,
+      expiresAt,
+      message: "Super Admin authorized"
+    });
   } else {
-    res.status(401).json({ error: "Invalid Super Admin Master PIN" });
+    // Increment failed attempts
+    const count = (attemptInfo ? attemptInfo.count : 0) + 1;
+    let lockedUntil = null;
+    if (count >= MAX_ATTEMPTS) {
+      lockedUntil = now + LOCKOUT_MS;
+      loginAttempts.set(ip, { count, lockedUntil });
+      return res.status(429).json({
+        error: "Too many failed attempts. Locked out for 15 minutes."
+      });
+    }
+
+    loginAttempts.set(ip, { count, lockedUntil: null });
+    const remaining = MAX_ATTEMPTS - count;
+    return res.status(401).json({
+      error: `Invalid credentials. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining before 15m lockout.`
+    });
   }
 });
+
+// Logout session endpoint
+app.post("/api/superadmin/logout", (req, res) => {
+  const token = req.headers["x-superadmin-token"] || 
+                (req.headers["authorization"]?.startsWith("Bearer ") ? req.headers["authorization"].slice(7).trim() : null);
+  if (token) {
+    superadminSessions.delete(token);
+  }
+  res.json({ success: true, message: "Logged out successfully" });
+});
+
+// Periodic session cleanup
+setInterval(() => {
+  const now = Date.now();
+  for (const [t, s] of superadminSessions.entries()) {
+    if (now >= s.expiresAt) superadminSessions.delete(t);
+  }
+}, 60 * 60 * 1000).unref();
 
 // List all matches with full admin metadata & idle counters
 app.get("/api/superadmin/matches", checkSuperAdmin, (req, res) => {

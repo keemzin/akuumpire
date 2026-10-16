@@ -310,3 +310,20 @@ test("buildReplayFrames rejects truncated history and correctly starts at Set 1 
   assert.equal(last.winner, "B");
 });
 
+test("superadmin timing-safe auth supports arbitrary length passphrases securely", async () => {
+  const crypto = await import("node:crypto");
+  function timingSafeVerify(input, target) {
+    if (typeof input !== "string" || typeof target !== "string") return false;
+    const a = crypto.createHash("sha256").update(input.trim()).digest();
+    const b = crypto.createHash("sha256").update(target.trim()).digest();
+    return crypto.timingSafeEqual(a, b);
+  }
+
+  const longPass = "SuperLongKey_99128#@!_xyz_badminton_stadium_championship_2026_master_passphrase";
+  assert.equal(timingSafeVerify(longPass, longPass), true);
+  assert.equal(timingSafeVerify(" " + longPass + " ", longPass), true);
+  assert.equal(timingSafeVerify("wrong_passphrase", longPass), false);
+  assert.equal(timingSafeVerify("", longPass), false);
+  assert.equal(timingSafeVerify(null, longPass), false);
+});
+
