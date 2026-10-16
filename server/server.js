@@ -5,6 +5,14 @@ import crypto from "node:crypto";
 import cors from "cors";
 import { Server } from "socket.io";
 import { matchStore } from "./models/matchStore.js";
+
+if (typeof process.loadEnvFile === "function") {
+  try {
+    process.loadEnvFile();
+  } catch (e) {
+    // Ignore if .env doesn't exist
+  }
+}
 import {
   MATCH_TYPES,
   RULE_PRESETS,
@@ -405,6 +413,11 @@ const HOST = process.env.HOST || "0.0.0.0";
 server.listen(PORT, HOST, () => {
   console.log(`\n🏸 ShuttleLive server listening on ${HOST}:${PORT}`);
   console.log(`  > Local:   http://localhost:${PORT}`);
+  if (process.env.SUPABASE_URL) {
+    console.log(`  > Cloud DB: Connected (Supabase)`);
+  } else {
+    console.log(`  > Local DB: data/matches.json`);
+  }
   
   const nets = os.networkInterfaces();
   for (const name of Object.keys(nets)) {

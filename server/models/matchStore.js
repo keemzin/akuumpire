@@ -1,18 +1,35 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import { createClient } from "@supabase/supabase-js";
 import { createMatchState, getMatchIndicators } from "../rules/badmintonRules.js";
+
+if (typeof process.loadEnvFile === "function") {
+  try {
+    process.loadEnvFile();
+  } catch (e) {
+    // Ignore if .env doesn't exist
+  }
+}
 
 const DATA_DIR = path.resolve(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "matches.json");
 
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+
 class MatchStore {
   constructor() {
     this.matches = new Map();
+    this.supabase = null;
     this.ensureDataDir();
     this.loadFromDisk();
     this.seedDemoIfEmpty();
     this.reapStaleMatches();
+
+    if (SUPABASE_URL && SUPABASE_KEY) {
+      this.initSupabase();
+    }
 
     // Periodic reaper for AFK abandoned courts (every 10 minutes)
     setInterval(() => {
@@ -55,6 +72,83 @@ class MatchStore {
     } catch (err) {
       console.error("Failed to persist matches to disk:", err.message);
     }
+  }
+
+  async initSupabase() {
+    try {
+      this.supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { persistSession: false }
+      });
+      console.log(`☁️  Supabase cloud database enabled: ${SUPABASE_URL}`);
+
+      const { data, error } = await this.supabase
+        .from("matches")
+        .select("*")
+        .order("updated_at", { ascending: false });
+
+      if (error) {
+        console.warn("⚠️  [Supabase] Failed to fetch matches, using local data:", error.message);
+        return;
+      }
+
+      if (Array.isArray(data) && data.length > 0) {
+        this.matches.clear();
+        for (const row of data) {
+          if (Array.isArray(row.match_state?.setsHistory)) {
+            const map = new Map();
+            row.match_state.setsHistory.forEach((s, idx) => {
+              const k = s.set || (idx + 1);
+              map.set(k, { ...s, set: k });
+            });
+            row.match_state.setsHistory = Array.from(map.values());
+          }
+          this.matches.set(row.id, {
+            id: row.id,
+            adminPin: row.admin_pin,
+            adminToken: row.admin_token,
+            createdAt: row.created_at,
+            matchState: row.match_state
+          });
+        }
+        this.saveToDisk();
+        console.log(`✅ [Supabase] Synced ${data.length} match(es) from cloud database.`);
+      } else if (this.matches.size > 0) {
+        console.log("☁️  [Supabase] Cloud database is empty. Uploading current matches...");
+        for (const record of this.matches.values()) {
+          this.persistToSupabase(record);
+        }
+      }
+    } catch (err) {
+      console.warn("⚠️  [Supabase] Initialization error:", err.message);
+    }
+  }
+
+  persistRecord(record) {
+    this.saveToDisk();
+    this.persistToSupabase(record);
+  }
+
+  persistToSupabase(record) {
+    if (!this.supabase || !record) return;
+    const state = record.matchState || {};
+    this.supabase
+      .from("matches")
+      .upsert({
+        id: record.id,
+        admin_pin: record.adminPin,
+        admin_token: record.adminToken,
+        created_at: record.createdAt || state.createdAt || new Date().toISOString(),
+        updated_at: state.updatedAt || new Date().toISOString(),
+        match_state: state
+      })
+      .then(({ error }) => {
+        if (error) {
+          console.error(`⚠️  [Supabase] Upsert error for match ${record.id}:`, error.message);
+        }
+      })
+      .catch((err) => {
+        console.error(`⚠️  [Supabase] Network error for match ${record.id}:`, err.message);
+      });
   }
 
   /**
@@ -144,6 +238,11 @@ class MatchStore {
     });
 
     this.saveToDisk();
+    if (this.supabase) {
+      for (const record of this.matches.values()) {
+        this.persistToSupabase(record);
+      }
+    }
   }
 
   createMatch(config) {
@@ -167,7 +266,7 @@ class MatchStore {
     };
 
     this.matches.set(id, matchRecord);
-    this.saveToDisk();
+    this.persistRecord(matchRecord);
 
     return {
       id,
@@ -217,6 +316,9 @@ class MatchStore {
         
         if (hasNoPoints && (now - createdTime > TWO_HOURS_MS)) {
           this.matches.delete(id);
+          if (this.supabase) {
+            this.supabase.from("matches").delete().eq("id", id).catch(() => {});
+          }
           modified = true;
           continue;
         }
@@ -237,6 +339,13 @@ class MatchStore {
 
     if (modified) {
       this.saveToDisk();
+      if (this.supabase) {
+        for (const record of this.matches.values()) {
+          if (record.matchState?.status === "ABANDONED") {
+            this.persistToSupabase(record);
+          }
+        }
+      }
     }
     return modified;
   }
@@ -272,15 +381,29 @@ class MatchStore {
   }
 
   purgeHistory() {
-    let deletedCount = 0;
+    const toDelete = [];
     for (const [id, record] of this.matches.entries()) {
       if (record.matchState?.status === "FINISHED" || record.matchState?.status === "ABANDONED") {
         this.matches.delete(id);
-        deletedCount++;
+        toDelete.push(id);
       }
     }
-    if (deletedCount > 0) this.saveToDisk();
-    return deletedCount;
+    if (toDelete.length > 0) {
+      this.saveToDisk();
+      if (this.supabase) {
+        this.supabase
+          .from("matches")
+          .delete()
+          .in("id", toDelete)
+          .then(({ error }) => {
+            if (error) console.error("⚠️  [Supabase] Purge error:", error.message);
+          })
+          .catch((err) => {
+            console.error("⚠️  [Supabase] Purge network error:", err.message);
+          });
+      }
+    }
+    return toDelete.length;
   }
 
   sanitizePublicState(matchState) {
@@ -296,13 +419,27 @@ class MatchStore {
     if (!record) return null;
 
     record.matchState = newState;
-    this.saveToDisk();
+    this.persistRecord(record);
     return this.sanitizePublicState(record.matchState);
   }
 
   deleteMatch(matchId) {
     const existed = this.matches.delete(matchId);
-    if (existed) this.saveToDisk();
+    if (existed) {
+      this.saveToDisk();
+      if (this.supabase) {
+        this.supabase
+          .from("matches")
+          .delete()
+          .eq("id", matchId)
+          .then(({ error }) => {
+            if (error) console.error(`⚠️  [Supabase] Delete error for match ${matchId}:`, error.message);
+          })
+          .catch((err) => {
+            console.error(`⚠️  [Supabase] Delete network error for match ${matchId}:`, err.message);
+          });
+      }
+    }
     return existed;
   }
 }

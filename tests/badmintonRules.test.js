@@ -327,3 +327,45 @@ test("superadmin timing-safe auth supports arbitrary length passphrases securely
   assert.equal(timingSafeVerify(null, longPass), false);
 });
 
+test("matchStore safely delegates persistence to Supabase client when configured", async () => {
+  let upsertCalledWith = null;
+  let deleteCalledWith = null;
+
+  const mockSupabase = {
+    from: (table) => ({
+      upsert: async (record) => {
+        upsertCalledWith = { table, record };
+        return { error: null };
+      },
+      delete: () => ({
+        eq: async (col, val) => {
+          deleteCalledWith = { table, col, val };
+          return { error: null };
+        },
+        in: async (col, vals) => {
+          deleteCalledWith = { table, col, vals };
+          return { error: null };
+        }
+      })
+    })
+  };
+
+  const originalClient = matchStore.supabase;
+  matchStore.supabase = mockSupabase;
+
+  try {
+    const testMatch = matchStore.createMatch({ court: "Cloud Court" });
+    assert.ok(upsertCalledWith, "Should have called upsert on mock Supabase");
+    assert.equal(upsertCalledWith.table, "matches");
+    assert.equal(upsertCalledWith.record.id, testMatch.id);
+
+    matchStore.deleteMatch(testMatch.id);
+    assert.ok(deleteCalledWith, "Should have called delete on mock Supabase");
+    assert.equal(deleteCalledWith.table, "matches");
+    assert.equal(deleteCalledWith.val, testMatch.id);
+  } finally {
+    matchStore.supabase = originalClient;
+  }
+});
+
+
