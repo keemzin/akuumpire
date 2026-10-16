@@ -9,7 +9,10 @@
 
 - **⚡ Zero Account Registration**: Anyone can create a match in 10 seconds. No email, password, or credit card required.
 - **🔒 PIN & Token Security**: Auto-generates a secure 4-digit PIN (e.g. `8392`) so only authorized umpires on the court can update scores.
-- **📺 BWF Stadium TV Scoreboard**: High-contrast, dark-mode display with digital LED scores, pulsing serve indicators, set histories, and full-screen TV mode for gym monitors.
+- **🛡️ Hardened Super Admin Console**: Multi-court stadium management dashboard protected by arbitrary-length passphrases, SHA-256 timing-safe verification, IP-based brute-force lockout (5 attempts -> 15 min ban), and stateless session tokens.
+- **☁️ Supabase Cloud Persistence**: Built-in cloud database integration using PostgreSQL JSONB, ensuring matches survive server restarts, scale-to-zero sleeps, and redeployments permanently on free cloud hosts like Render. Auto-falls back to local JSON for offline development.
+- **📺 BWF Stadium TV Scoreboard**: High-contrast, dark-mode display with digital LED scores, pulsing serve indicators, set histories, and full-screen TV mode for gym monitors with zero layout shifts on status alerts.
+- **🎬 Interactive Match Replay Engine**: Replay any concluded match rally-by-rally from 0-0 with play/pause, scrub speed controls (1x, 2x, 4x), and step-by-step navigation.
 - **📱 Ergonomic Umpire Controller**: Massive thumb-friendly touch pads (`+1`), instant undo button, tactile audio feedback, and visual service box guidance.
 - **🔄 Real-Time WebSockets**: Instant updates (< 50ms) across all devices and TVs via Socket.io.
 - **📲 QR Code Sharing**: Spectators in the stands can scan the scoreboard QR code to follow the game live on their own phones.
@@ -25,7 +28,10 @@ graph TD
     C["Register Match<br/>(/admin)"] -->|Generates 4-Digit PIN| D["Match Creator / Organizer"]
     B -->|Click 'Umpire Scorer' & Enter PIN| E["Umpire Touch Controller<br/>(/umpire/:id)"]
     E -->|"WebSocket Action (match:point)"| F["Express + Socket.io Server"]
-    F -->|BWF Rules Engine| G["State Manager & JSON Store"]
+    F -->|BWF Rules Engine| G["State Manager & Persistence"]
+    G -->|"Cloud DB (Production)"| H["Supabase PostgreSQL"]
+    G -->|"Local File (Fallback)"| I["data/matches.json"]
+    J["Super Admin Dashboard<br/>(/superadmin)"] -->|Passphrase Auth & Rate Limit| F
     F -.->|"Instant Realtime Broadcast"| B
     F -.->|"Live List Sync"| A
 ```
@@ -125,39 +131,99 @@ Visit your repository on GitHub and click the **Actions** tab (`https://github.c
 
 ---
 
+## 🔐 Environment Variables
+
+Copy `.env.example` to `.env` to configure your environment:
+
+```bash
+cp .env.example .env
+```
+
+| Variable | Required | Default | Description |
+| :--- | :---: | :---: | :--- |
+| `PORT` | Optional | `3000` | Port for the web & WebSocket server. Automatically supplied on cloud platforms like Render. |
+| `HOST` | Optional | `0.0.0.0` | Network binding interface. |
+| `SUPERADMIN_PASSWORD` | Optional | `9999` | Master passphrase for `/superadmin`. Supports arbitrary-length passphrases. Also accepts `SUPERADMIN_KEY`. |
+| `SUPABASE_URL` | Optional | *none* | Your Supabase project URL (e.g. `https://xyz.supabase.co`). Enables cloud persistence. |
+| `SUPABASE_KEY` | Optional | *none* | Your Supabase project `service_role` (secret) or `anon` (public) API key. |
+
+> **Note**: If `SUPABASE_URL` and `SUPABASE_KEY` are not set, the server automatically defaults to local JSON storage (`data/matches.json`).
+
+---
+
+## ☁️ Database & Persistence (Supabase vs Local JSON)
+
+ShuttleLive features an automatic **hybrid storage engine**:
+- **On Cloud Hosts (Render, Railway, Fly.io)**: Ephemeral server instances wipe local disks on rebuilds and sleep cycles. Setting `SUPABASE_URL` and `SUPABASE_KEY` persists all matches, scores, and replay timelines permanently to free cloud PostgreSQL ($0 cost).
+- **On Local Development / Offline**: Works out of the box with zero database installation required, writing directly to `data/matches.json`.
+
+### Supabase Table Schema
+When connecting a new Supabase project, execute this migration in your Supabase **SQL Editor**:
+
+```sql
+CREATE TABLE IF NOT EXISTS matches (
+  id TEXT PRIMARY KEY,
+  admin_pin TEXT NOT NULL,
+  admin_token TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  match_state JSONB NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_matches_updated_at ON matches (updated_at DESC);
+```
+
+---
+
+## 🛡️ Super Admin Dashboard (`/superadmin`)
+
+Tournament organizers and stadium managers can access the central command board at `/superadmin`:
+- **Real-Time Court Monitoring**: View all active, finished, and abandoned courts with idle timers.
+- **PIN Recovery & Admin Launch**: View court umpire PINs or directly launch the umpire console without entering PINs.
+- **Court Lifecycle Actions**: Remote conclusion, abandonment, or hard deletion of stuck courts.
+- **Bulk Cleanup**: Purge concluded matches or restore default tournament demo matches with 1 click.
+- **Brute-Force Protection**: 5 failed login attempts lock out the client IP for 15 minutes with HTTP 429 status.
+- **Timing-Safe Auth**: Protected against side-channel timing analysis attacks using Node's `crypto.timingSafeEqual`.
+
+---
+
 ## 📦 Project Structure
 
 ```
 shuttlelive/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml               # Automated CI test runner
+│       └── ci.yml               # Automated CI test runner (Node 18, 20, 22)
 ├── data/
-│   └── matches.json             # Persistent match records
+│   └── matches.json             # Local fallback JSON match store
 ├── server/
-│   ├── server.js                # Express & Socket.io server
+│   ├── server.js                # Express & Socket.io server + Super Admin API
 │   ├── rules/
-│   │   └── badmintonRules.js    # BWF scoring & rotation engine
+│   │   └── badmintonRules.js    # BWF scoring, deuce, rotation & interval engine
 │   └── models/
-│       └── matchStore.js        # Match memory & disk persistence
+│       └── matchStore.js        # Hybrid memory, Supabase & disk persistence store
 ├── public/
-│   ├── index.html               # Live courts landing page
+│   ├── index.html               # Live courts stadium lobby
 │   ├── admin.html               # Match registration & PIN creator
-│   ├── match.html               # Spectator & TV stadium scoreboard
+│   ├── match.html               # Spectator & TV stadium scoreboard + replay
 │   ├── umpire.html              # Mobile touch scoring console
+│   ├── superadmin.html          # Tournament master management console
 │   ├── css/
 │   │   ├── tokens.css           # Visual theme tokens & palette
 │   │   ├── base.css             # Base components, modals & layout
-│   │   ├── scoreboard.css       # LED digital scoreboard styles
-│   │   └── umpire.css           # Ergonomic controller styles
+│   │   ├── scoreboard.css       # LED digital scoreboard & broadcast ribbon
+│   │   └── umpire.css           # Ergonomic touch controller styles
 │   └── js/
-│       ├── socket.js            # Socket.io connection & WebAudio
+│       ├── socket.js            # Socket.io connection & WebAudio sound synthesis
 │       ├── home.js              # Landing page controller
 │       ├── admin.js             # Match registration controller
 │       ├── match.js             # Spectator scoreboard controller
-│       └── umpire.js            # Umpire scoring controller
+│       ├── umpire.js            # Umpire scoring controller
+│       ├── superadmin.js        # Super Admin management controller
+│       └── replayEngine.js      # Frame generator & timeline simulation engine
 ├── tests/
-│   └── badmintonRules.test.js   # Automated unit tests
+│   └── badmintonRules.test.js   # Automated unit tests (15 test suites)
+├── .env.example                 # Environment configuration template
 ├── CONTRIBUTING.md               # Contribution guidelines
 ├── LICENSE                       # MIT License
 └── package.json
@@ -167,10 +233,19 @@ shuttlelive/
 
 ## 🌐 Deployment Options
 
-### Render / Railway / Fly.io (Zero Config)
-- **Build Command**: `npm install`
-- **Start Command**: `npm start`
-- **Environment**: Set `PORT=3000` (or leave default assigned by host).
+### Deploying to Render.com (Recommended Free Setup)
+
+1. **Connect GitHub Repo**: Link your repository in the Render Dashboard.
+2. **Create Web Service**:
+   - **Environment**: `Node`
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+3. **Configure Environment Variables**:
+   Under the **Environment** tab of your Render service, add:
+   - `SUPERADMIN_PASSWORD`: Your secret super admin passphrase
+   - `SUPABASE_URL`: `https://<your-project-ref>.supabase.co`
+   - `SUPABASE_KEY`: Your Supabase `service_role` (secret) API key
+4. **Deploy**: Render will build the service and deploy it with permanent cloud database persistence.
 
 ---
 
