@@ -1,4 +1,14 @@
-import { socket, showToast, playScoreBeep } from "./socket.js";
+import { socket, showToast, playScoreBeep, playWarningBeep } from "./socket.js";
+import {
+  addPoint as applyAddPoint,
+  undoLastPoint as applyUndoPoint,
+  startNextSet as applyNextSet,
+  switchServingTeam as applySwitchServe,
+  switchCourtEnds as applySwapEnds,
+  resumeFromInterval as applyResumeInterval,
+  concludeMatchEarly as applyConcludeEarly,
+  abandonMatch as applyAbandonMatch
+} from "./badmintonRules.js";
 
 const pathParts = window.location.pathname.split("/").filter(Boolean);
 const matchId = pathParts[1] || new URLSearchParams(window.location.search).get("id");
@@ -7,7 +17,257 @@ const queryParams = new URLSearchParams(window.location.search);
 let adminToken = queryParams.get("token") || localStorage.getItem(`shuttle_token_${matchId}`);
 let adminPin = localStorage.getItem(`shuttle_pin_${matchId}`);
 
+// Persistent Device Identifier for Single-Active Umpire Lease
+function getOrCreateDeviceId() {
+  let devId = localStorage.getItem("shuttle_device_id");
+  if (!devId) {
+    devId = "umpire_" + Math.random().toString(36).slice(2, 10) + "_" + Date.now();
+    localStorage.setItem("shuttle_device_id", devId);
+  }
+  return devId;
+}
+const deviceId = getOrCreateDeviceId();
+
+const OFFLINE_STORAGE_KEY = `shuttle_offline_match_${matchId}`;
 let currentMatch = null;
+let isConnected = true;
+let isSocketInitialized = false;
+let isScoringInFlight = false;
+let unsyncedCount = 0;
+let syncCountdownTimer = null;
+let syncCountdownSeconds = 3;
+
+function getOfflineStorage() {
+  try {
+    const raw = localStorage.getItem(OFFLINE_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveOfflineStorage(matchState, count) {
+  try {
+    localStorage.setItem(OFFLINE_STORAGE_KEY, JSON.stringify({
+      matchState,
+      unsyncedCount: count,
+      updatedAt: Date.now()
+    }));
+  } catch (e) {}
+}
+
+function clearOfflineStorage() {
+  localStorage.removeItem(OFFLINE_STORAGE_KEY);
+}
+
+function updateOfflineBanner() {
+  const banner = document.getElementById("umpire-connection-banner");
+  const text = document.getElementById("umpire-connection-text");
+  const syncActions = document.getElementById("sync-actions");
+  const countdownText = document.getElementById("sync-countdown-text");
+
+  if (!banner || !text) return;
+
+  if (!isConnected) {
+    // Offline mode: allow local scoring, clear countdown
+    if (syncCountdownTimer) {
+      clearInterval(syncCountdownTimer);
+      syncCountdownTimer = null;
+    }
+    banner.className = "umpire-connection-banner offline-mode";
+    banner.style.display = "flex";
+    if (syncActions) syncActions.style.display = "none";
+    text.textContent = `📴 Offline Mode Active — Scoring locally (${unsyncedCount} unsynced)`;
+  } else if (unsyncedCount > 0) {
+    // Online restored, but unsynced points exist!
+    banner.className = "umpire-connection-banner sync-pending";
+    banner.style.display = "flex";
+    if (syncActions) syncActions.style.display = "flex";
+    text.textContent = `📡 WiFi Restored: ${unsyncedCount} point(s) ready to sync`;
+
+    // Start 3-second auto-sync countdown if not already ticking
+    if (!syncCountdownTimer) {
+      syncCountdownSeconds = 3;
+      if (countdownText) countdownText.textContent = `(Auto in ${syncCountdownSeconds}s)`;
+      syncCountdownTimer = setInterval(() => {
+        syncCountdownSeconds--;
+        if (syncCountdownSeconds <= 0) {
+          clearInterval(syncCountdownTimer);
+          syncCountdownTimer = null;
+          executeSync();
+        } else if (countdownText) {
+          countdownText.textContent = `(Auto in ${syncCountdownSeconds}s)`;
+        }
+      }, 1000);
+    }
+  } else {
+    // Fully connected & in sync
+    if (syncCountdownTimer) {
+      clearInterval(syncCountdownTimer);
+      syncCountdownTimer = null;
+    }
+    if (syncActions) syncActions.style.display = "none";
+    banner.className = "umpire-connection-banner connected";
+    text.textContent = "✅ Connected — Match in sync";
+    setTimeout(() => {
+      if (isConnected && unsyncedCount === 0) {
+        banner.style.display = "none";
+      }
+    }, 2200);
+  }
+}
+
+function executeSync() {
+  if (syncCountdownTimer) {
+    clearInterval(syncCountdownTimer);
+    syncCountdownTimer = null;
+  }
+
+  if (!socket || !socket.connected) {
+    showToast("Reconnecting... Will sync as soon as connected", "warning");
+    return;
+  }
+
+  const text = document.getElementById("umpire-connection-text");
+  const syncActions = document.getElementById("sync-actions");
+  if (syncActions) syncActions.style.display = "none";
+  if (text) text.textContent = `⚡ Syncing ${unsyncedCount} points to stadium scoreboard...`;
+
+  socket.emit("match:sync_state", {
+    matchId,
+    pinOrToken: adminToken,
+    matchState: currentMatch,
+    deviceId
+  });
+}
+
+function initSocketSync() {
+  if (!socket || isSocketInitialized) return;
+  isSocketInitialized = true;
+
+  socket.emit("match:join", { matchId });
+
+  socket.on("match:updated", (updated) => {
+    isScoringInFlight = false;
+    // Only accept incoming server updates if we do not have pending local unsynced offline points
+    if (unsyncedCount === 0) {
+      currentMatch = updated;
+      updateConsoleUI(updated);
+    }
+  });
+
+  socket.on("match:sync_confirmed", ({ matchState }) => {
+    unsyncedCount = 0;
+    clearOfflineStorage();
+    currentMatch = matchState;
+    updateConsoleUI(matchState);
+
+    const banner = document.getElementById("umpire-connection-banner");
+    const text = document.getElementById("umpire-connection-text");
+    const syncActions = document.getElementById("sync-actions");
+    if (syncActions) syncActions.style.display = "none";
+    if (banner) {
+      banner.className = "umpire-connection-banner connected";
+      if (text) text.textContent = "✅ All points synchronized with stadium!";
+      setTimeout(() => {
+        if (isConnected && unsyncedCount === 0) banner.style.display = "none";
+      }, 2500);
+    }
+    showToast("Scoreboard synchronized!", "info");
+  });
+
+  socket.on("disconnect", (reason) => {
+    console.warn("[Umpire] Disconnected:", reason);
+    if (socket && socket.sendBuffer) socket.sendBuffer = [];
+    isConnected = false;
+    updateOfflineBanner();
+  });
+
+  socket.on("connect_error", (err) => {
+    console.warn("[Umpire] Connect error:", err);
+    if (socket && socket.sendBuffer) socket.sendBuffer = [];
+    isConnected = false;
+    updateOfflineBanner();
+  });
+
+  socket.on("connect", () => {
+    console.log("[Umpire] Connected to server socket");
+    if (socket && socket.sendBuffer) socket.sendBuffer = [];
+    isConnected = true;
+    updateOfflineBanner();
+
+    // If no offline points are waiting, fetch latest server match state
+    if (unsyncedCount === 0) {
+      socket.emit("match:join", { matchId });
+    }
+  });
+
+  window.addEventListener("offline", () => {
+    if (socket && socket.sendBuffer) socket.sendBuffer = [];
+    isConnected = false;
+    updateOfflineBanner();
+  });
+
+  window.addEventListener("online", () => {
+    if (socket && !socket.connected) {
+      socket.connect();
+    } else {
+      isConnected = true;
+      updateOfflineBanner();
+    }
+  });
+}
+
+async function verifyAndAuthorize(pinOrToken, forceTakeover = false) {
+  const res = await fetch(`/api/matches/${matchId}/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pinOrToken, deviceId, forceTakeover })
+  });
+
+  if (!res.ok) {
+    throw new Error("Invalid Match PIN");
+  }
+
+  const authData = await res.json();
+  if (authData.hasDeviceConflict) {
+    promptConflictModal(pinOrToken);
+    return null;
+  }
+
+  adminPin = authData.adminPin;
+  adminToken = authData.adminToken;
+  localStorage.setItem(`shuttle_token_${matchId}`, adminToken);
+  localStorage.setItem(`shuttle_pin_${matchId}`, adminPin);
+
+  return authData.matchState;
+}
+
+function promptConflictModal(pinOrToken) {
+  const conflictModal = document.getElementById("conflict-modal");
+  const btnTakeover = document.getElementById("btn-force-takeover");
+  const btnCancel = document.getElementById("btn-cancel-takeover");
+
+  if (conflictModal) conflictModal.classList.add("active");
+
+  btnTakeover?.replaceWith(btnTakeover.cloneNode(true));
+  const newBtnTakeover = document.getElementById("btn-force-takeover");
+  newBtnTakeover?.addEventListener("click", async () => {
+    conflictModal.classList.remove("active");
+    try {
+      const matchState = await verifyAndAuthorize(pinOrToken, true);
+      if (matchState) setupUmpireConsole(matchState);
+    } catch (err) {
+      showToast(err.message, "error");
+    }
+  });
+
+  btnCancel?.replaceWith(btnCancel.cloneNode(true));
+  const newBtnCancel = document.getElementById("btn-cancel-takeover");
+  newBtnCancel?.addEventListener("click", () => {
+    window.location.href = `/match/${matchId}`;
+  });
+}
 
 async function initUmpire() {
   if (!matchId) {
@@ -15,39 +275,29 @@ async function initUmpire() {
     return;
   }
 
-  // If no token in URL or storage, show prompt
+  // Restore any pending offline state from storage first
+  const offlineData = getOfflineStorage();
+  if (offlineData && offlineData.matchState) {
+    currentMatch = offlineData.matchState;
+    unsyncedCount = offlineData.unsyncedCount || 0;
+  }
+
+  // Initialize socket lifecycle handlers
+  initSocketSync();
+
+  // If no token in URL or storage, show PIN prompt
   if (!adminToken) {
     promptForPin();
     return;
   }
 
   try {
-    const res = await fetch(`/api/matches/${matchId}/verify`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pinOrToken: adminToken })
-    });
+    const matchState = await verifyAndAuthorize(adminToken);
+    if (!matchState) return;
 
-    if (!res.ok) {
-      throw new Error("Invalid or expired session");
-    }
-
-    const authData = await res.json();
-    adminPin = authData.adminPin;
-    adminToken = authData.adminToken;
-    localStorage.setItem(`shuttle_token_${matchId}`, adminToken);
-    localStorage.setItem(`shuttle_pin_${matchId}`, adminPin);
-
-    // Connected & verified!
-    setupUmpireConsole(authData.matchState);
-
-    // Socket sync
-    if (socket) {
-      socket.emit("match:join", { matchId });
-      socket.on("match:updated", (updated) => {
-        updateConsoleUI(updated);
-      });
-    }
+    // If we have unsynced local points, preserve local score; otherwise use server state
+    const activeState = (unsyncedCount > 0 && currentMatch) ? currentMatch : matchState;
+    setupUmpireConsole(activeState);
   } catch (err) {
     localStorage.removeItem(`shuttle_token_${matchId}`);
     promptForPin();
@@ -70,27 +320,12 @@ function promptForPin() {
       const entered = pinInput.value.trim();
 
       try {
-        const res = await fetch(`/api/matches/${matchId}/verify`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ pinOrToken: entered })
-        });
-
-        if (!res.ok) throw new Error("Incorrect Match PIN");
-
-        const authData = await res.json();
-        adminToken = authData.adminToken;
-        adminPin = authData.adminPin;
-        localStorage.setItem(`shuttle_token_${matchId}`, adminToken);
-        localStorage.setItem(`shuttle_pin_${matchId}`, adminPin);
+        const matchState = await verifyAndAuthorize(entered);
+        if (!matchState) return;
 
         modal.classList.remove("active");
-        setupUmpireConsole(authData.matchState);
-
-        if (socket) {
-          socket.emit("match:join", { matchId });
-          socket.on("match:updated", (updated) => updateConsoleUI(updated));
-        }
+        const activeState = (unsyncedCount > 0 && currentMatch) ? currentMatch : matchState;
+        setupUmpireConsole(activeState);
       } catch (err) {
         showToast(err.message, "error");
       }
@@ -127,6 +362,7 @@ function setupUmpireConsole(initialState) {
   document.getElementById("btn-swap-ends")?.addEventListener("click", swapEnds);
   document.getElementById("btn-switch-serve")?.addEventListener("click", switchServe);
   document.getElementById("btn-resume-interval")?.addEventListener("click", resumeInterval);
+  document.getElementById("btn-sync-now")?.addEventListener("click", executeSync);
 
   // Conclude / Abandon Court Actions
   const concludeModal = document.getElementById("conclude-modal");
@@ -184,6 +420,7 @@ function setupUmpireConsole(initialState) {
   }
 
   updateConsoleUI(initialState);
+  updateOfflineBanner();
 }
 
 function scorePoint(team) {
@@ -194,59 +431,119 @@ function scorePoint(team) {
 
   playScoreBeep(false);
 
-  if (socket) {
+  // If online and in sync: send directly to server
+  if (isConnected && socket && socket.connected && unsyncedCount === 0) {
+    if (isScoringInFlight) return;
+    isScoringInFlight = true;
+    setTimeout(() => { isScoringInFlight = false; }, 1200);
+
     socket.emit("match:point", {
       matchId,
       scoringTeam: team,
-      pinOrToken: adminToken
+      pinOrToken: adminToken,
+      deviceId
     });
+    return;
   }
+
+  // Offline mode or pending sync: apply local BWF rules immediately!
+  applyAddPoint(currentMatch, team);
+  unsyncedCount++;
+  saveOfflineStorage(currentMatch, unsyncedCount);
+  updateConsoleUI(currentMatch);
+  updateOfflineBanner();
 }
 
 function undoPoint() {
+  if (!currentMatch) return;
   playScoreBeep(true);
-  if (socket) {
+
+  if (isConnected && socket && socket.connected && unsyncedCount === 0) {
     socket.emit("match:undo", {
       matchId,
-      pinOrToken: adminToken
+      pinOrToken: adminToken,
+      deviceId
     });
+    return;
   }
+
+  applyUndoPoint(currentMatch);
+  if (unsyncedCount > 0) unsyncedCount--;
+  saveOfflineStorage(currentMatch, unsyncedCount);
+  updateConsoleUI(currentMatch);
+  updateOfflineBanner();
 }
 
 function nextSet() {
-  if (socket) {
+  if (!currentMatch) return;
+  if (isConnected && socket && socket.connected && unsyncedCount === 0) {
     socket.emit("match:next_set", {
       matchId,
-      pinOrToken: adminToken
+      pinOrToken: adminToken,
+      deviceId
     });
+    return;
   }
+
+  applyNextSet(currentMatch);
+  unsyncedCount++;
+  saveOfflineStorage(currentMatch, unsyncedCount);
+  updateConsoleUI(currentMatch);
+  updateOfflineBanner();
 }
 
 function swapEnds() {
-  if (socket) {
+  if (!currentMatch) return;
+  if (isConnected && socket && socket.connected && unsyncedCount === 0) {
     socket.emit("match:swap_ends", {
       matchId,
-      pinOrToken: adminToken
+      pinOrToken: adminToken,
+      deviceId
     });
+    return;
   }
+
+  applySwapEnds(currentMatch);
+  unsyncedCount++;
+  saveOfflineStorage(currentMatch, unsyncedCount);
+  updateConsoleUI(currentMatch);
+  updateOfflineBanner();
 }
 
 function switchServe() {
-  if (socket) {
+  if (!currentMatch) return;
+  if (isConnected && socket && socket.connected && unsyncedCount === 0) {
     socket.emit("match:switch_serve", {
       matchId,
-      pinOrToken: adminToken
+      pinOrToken: adminToken,
+      deviceId
     });
+    return;
   }
+
+  applySwitchServe(currentMatch);
+  unsyncedCount++;
+  saveOfflineStorage(currentMatch, unsyncedCount);
+  updateConsoleUI(currentMatch);
+  updateOfflineBanner();
 }
 
 function resumeInterval() {
-  if (socket) {
+  if (!currentMatch) return;
+  if (isConnected && socket && socket.connected && unsyncedCount === 0) {
     socket.emit("match:resume_interval", {
       matchId,
-      pinOrToken: adminToken
+      pinOrToken: adminToken,
+      deviceId
     });
+    return;
   }
+
+  applyResumeInterval(currentMatch);
+  unsyncedCount++;
+  saveOfflineStorage(currentMatch, unsyncedCount);
+  updateConsoleUI(currentMatch);
+  updateOfflineBanner();
 }
 
 function updateConsoleUI(match) {

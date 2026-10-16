@@ -285,6 +285,22 @@ class MatchStore {
     return match.adminPin === trimmed || match.adminToken === trimmed;
   }
 
+  setActiveUmpireDevice(matchId, deviceId) {
+    const raw = this.matches.get(matchId);
+    if (!raw) return;
+    raw.activeUmpireDeviceId = deviceId;
+    raw.activeUmpireDeviceLastSeen = Date.now();
+  }
+
+  getActiveUmpireDevice(matchId) {
+    const raw = this.matches.get(matchId);
+    if (!raw) return { deviceId: null, lastSeen: null };
+    return {
+      deviceId: raw.activeUmpireDeviceId || null,
+      lastSeen: raw.activeUmpireDeviceLastSeen || null
+    };
+  }
+
   getPublicMatch(matchId) {
     const match = this.matches.get(matchId);
     if (!match) return null;

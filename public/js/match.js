@@ -14,6 +14,28 @@ let currentFrameIdx = 0;
 let replayTimer = null;
 let replaySpeed = 1;
 const BASE_SPEED_MS = 800;
+let isViewerOnline = true;
+
+function setViewerConnectionState(online) {
+  isViewerOnline = online;
+  const statusBadgeEl = document.getElementById("disp-status-badge");
+  const statusBadgeNavEl = document.getElementById("disp-status-badge-nav");
+
+  if (!online) {
+    if (statusBadgeEl) {
+      statusBadgeEl.className = "badge badge-abandoned";
+      statusBadgeEl.textContent = "⚡ Offline";
+    }
+    if (statusBadgeNavEl) {
+      statusBadgeNavEl.className = "badge badge-abandoned";
+      statusBadgeNavEl.textContent = "⚡ Offline";
+    }
+  } else {
+    if (currentMatchData) {
+      renderScoreboard(currentMatchData);
+    }
+  }
+}
 
 async function loadInitialMatch() {
   if (!matchId) {
@@ -42,6 +64,32 @@ async function loadInitialMatch() {
       socket.on("match:deleted", () => {
         showToast("This match has been concluded or deleted.", "warning");
         setTimeout(() => window.location.href = "/", 2000);
+      });
+
+      socket.on("disconnect", () => {
+        setViewerConnectionState(false);
+      });
+
+      socket.on("connect_error", () => {
+        setViewerConnectionState(false);
+      });
+
+      socket.on("connect", () => {
+        setViewerConnectionState(true);
+        socket.emit("match:join", { matchId });
+      });
+
+      window.addEventListener("offline", () => {
+        setViewerConnectionState(false);
+      });
+
+      window.addEventListener("online", () => {
+        if (socket && !socket.connected) {
+          socket.connect();
+        } else {
+          setViewerConnectionState(true);
+          socket.emit("match:join", { matchId });
+        }
       });
     }
   } catch (err) {

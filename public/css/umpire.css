@@ -9,6 +9,112 @@
   padding-bottom: 3rem;
 }
 
+/* Connection Safeguard Banner (Offline-First Sync) */
+.umpire-connection-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: all 0.25s ease;
+  animation: bannerSlideDown 0.25s ease-out;
+}
+
+@keyframes bannerSlideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.umpire-connection-banner.disconnected,
+.umpire-connection-banner.offline-mode {
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #fef08a;
+  box-shadow: 0 4px 18px rgba(245, 158, 11, 0.15);
+  justify-content: center;
+}
+
+.umpire-connection-banner.sync-pending {
+  background: rgba(6, 182, 212, 0.16);
+  border: 1px solid rgba(6, 182, 212, 0.45);
+  color: #a5f3fc;
+  box-shadow: 0 4px 18px rgba(6, 182, 212, 0.2);
+}
+
+.umpire-connection-banner.connected {
+  background: rgba(34, 197, 94, 0.16);
+  border: 1px solid rgba(34, 197, 94, 0.45);
+  color: #86efac;
+  box-shadow: 0 4px 18px rgba(34, 197, 94, 0.2);
+  justify-content: center;
+}
+
+.connection-status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.umpire-connection-banner.disconnected .connection-status-dot,
+.umpire-connection-banner.offline-mode .connection-status-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 10px #f59e0b;
+  animation: pulse-dot 1.2s infinite ease-in-out;
+}
+
+.umpire-connection-banner.sync-pending .connection-status-dot {
+  background: #06b6d4;
+  box-shadow: 0 0 10px #06b6d4;
+  animation: pulse-dot 1s infinite ease-in-out;
+}
+
+.umpire-connection-banner.connected .connection-status-dot {
+  background: #22c55e;
+  box-shadow: 0 0 10px #22c55e;
+}
+
+.sync-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.btn-sync-now {
+  background: linear-gradient(135deg, var(--accent-lime), #059669);
+  color: #022c22;
+  font-weight: 800;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.8rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: transform 0.12s ease;
+  white-space: nowrap;
+}
+
+.btn-sync-now:active {
+  transform: scale(0.96);
+}
+
+.sync-countdown-text {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.3); opacity: 1; }
+}
+
 /* Match quick info bar */
 .umpire-header {
   background: var(--bg-card);
@@ -114,15 +220,16 @@
 }
 
 .pad-team-name {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 800;
   text-align: center;
   line-height: 1.2;
-  margin-bottom: 0.5rem;
-  max-width: 90%;
+  margin-bottom: 0.35rem;
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .pad-player-sub {

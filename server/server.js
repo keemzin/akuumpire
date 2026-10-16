@@ -30,7 +30,9 @@ import {
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: "*" }
+  cors: { origin: "*" },
+  pingInterval: 2500,
+  pingTimeout: 3000
 });
 
 const PORT = process.env.PORT || 3000;
@@ -39,6 +41,11 @@ const PUBLIC_DIR = path.resolve(process.cwd(), "public");
 app.use(cors());
 app.use(express.json({ limit: "5mb" }));
 app.use(express.static(PUBLIC_DIR));
+
+// Expose shared BWF badminton rules engine to client ES modules
+app.get("/js/badmintonRules.js", (req, res) => {
+  res.sendFile(path.resolve(process.cwd(), "server", "rules", "badmintonRules.js"));
+});
 
 // Friendly URL routes
 app.get("/admin", (req, res) => {
@@ -95,17 +102,45 @@ app.get("/api/matches/:id", (req, res) => {
   res.json(match);
 });
 
-// Verify PIN / Token
+// Verify PIN / Token + Single Active Umpire Device Lease
 app.post("/api/matches/:id/verify", (req, res) => {
-  const { pinOrToken } = req.body;
+  const { pinOrToken, deviceId, forceTakeover } = req.body;
   const valid = matchStore.verifyAdmin(req.params.id, pinOrToken);
   if (!valid) {
     return res.status(401).json({ valid: false, error: "Invalid PIN or Token" });
   }
 
+  const activeDevice = matchStore.getActiveUmpireDevice(req.params.id);
+  const now = Date.now();
+  const FIVE_MINUTES_MS = 5 * 60 * 1000;
+
+  // Check if another device holds an active scoring lease within 5 minutes
+  if (
+    deviceId &&
+    activeDevice.deviceId &&
+    activeDevice.deviceId !== deviceId &&
+    activeDevice.lastSeen &&
+    (now - activeDevice.lastSeen < FIVE_MINUTES_MS) &&
+    !forceTakeover
+  ) {
+    return res.json({
+      valid: true,
+      hasDeviceConflict: true,
+      activeDeviceId: activeDevice.deviceId,
+      adminPin: matchStore.getRawRecord(req.params.id).adminPin,
+      adminToken: matchStore.getRawRecord(req.params.id).adminToken,
+      matchState: matchStore.getPublicMatch(req.params.id)
+    });
+  }
+
+  if (deviceId) {
+    matchStore.setActiveUmpireDevice(req.params.id, deviceId);
+  }
+
   const raw = matchStore.getRawRecord(req.params.id);
   res.json({
     valid: true,
+    hasDeviceConflict: false,
     adminPin: raw.adminPin,
     adminToken: raw.adminToken,
     matchState: matchStore.getPublicMatch(req.params.id)
@@ -403,7 +438,7 @@ io.on("connection", (socket) => {
 
   // Helper to handle authenticated umpire actions
   const handleUmpireAction = (data, actionFn) => {
-    const { matchId, pinOrToken } = data;
+    const { matchId, pinOrToken, deviceId } = data;
     if (!matchStore.verifyAdmin(matchId, pinOrToken)) {
       socket.emit("error", { message: "Invalid credentials for this match" });
       return;
@@ -411,6 +446,10 @@ io.on("connection", (socket) => {
 
     const raw = matchStore.getRawRecord(matchId);
     if (!raw) return;
+
+    if (deviceId) {
+      matchStore.setActiveUmpireDevice(matchId, deviceId);
+    }
 
     actionFn(raw.matchState);
     const updated = matchStore.updateMatchState(matchId, raw.matchState);
@@ -420,6 +459,30 @@ io.on("connection", (socket) => {
     // Notify landing page match list
     io.emit("matches:list_updated", matchStore.listPublicMatches());
   };
+
+  // Batch / full offline match state sync from umpire device
+  socket.on("match:sync_state", (data) => {
+    const { matchId, pinOrToken, matchState, deviceId } = data;
+    if (!matchStore.verifyAdmin(matchId, pinOrToken)) {
+      socket.emit("error", { message: "Invalid credentials for this match" });
+      return;
+    }
+
+    const raw = matchStore.getRawRecord(matchId);
+    if (!raw) return;
+
+    if (deviceId) {
+      matchStore.setActiveUmpireDevice(matchId, deviceId);
+    }
+
+    if (matchState && matchState.id === matchId) {
+      matchState.updatedAt = new Date().toISOString();
+      const updated = matchStore.updateMatchState(matchId, matchState);
+      io.to(`match:${matchId}`).emit("match:updated", updated);
+      io.emit("matches:list_updated", matchStore.listPublicMatches());
+      socket.emit("match:sync_confirmed", { success: true, matchState: updated });
+    }
+  });
 
   // Umpire tapped score (+1 Team A or +1 Team B)
   socket.on("match:point", (data) => {

@@ -26,6 +26,18 @@
 
   <main class="container">
     <div class="umpire-container">
+      <!-- Connection Safeguard Banner (Offline-First Sync) -->
+      <div class="umpire-connection-banner" id="umpire-connection-banner" style="display: none;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; min-width: 0;">
+          <span class="connection-status-dot"></span>
+          <span class="connection-status-text" id="umpire-connection-text">Offline Mode</span>
+        </div>
+        <div class="sync-actions" id="sync-actions" style="display: none;">
+          <button type="button" class="btn-sync-now" id="btn-sync-now">⚡ Sync Now</button>
+          <span class="sync-countdown-text" id="sync-countdown-text"></span>
+        </div>
+      </div>
+
       <!-- Umpire Header -->
       <div class="umpire-header">
         <div>
@@ -140,6 +152,26 @@
         </button>
         <button type="button" class="btn btn-secondary" id="btn-confirm-abandon" style="width: 100%; border-color: rgba(239, 68, 68, 0.4); color: #f87171;">
           ⚠️ Abandon Match (Walkover / Cancel)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Device Takeover Modal (if another umpire is active) -->
+  <div class="modal-backdrop" id="conflict-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">⚠️ Active Umpire Detected</h3>
+      </div>
+      <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.5;">
+        Another tablet or phone is currently active and scoring this court. To prevent conflicting scores, you can take over or view as a spectator:
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <button type="button" class="btn btn-primary" id="btn-force-takeover" style="width: 100%;">
+          ⚡ Take Over Scoring on This Device
+        </button>
+        <button type="button" class="btn btn-secondary" id="btn-cancel-takeover" style="width: 100%;">
+          👀 View Scoreboard Instead
         </button>
       </div>
     </div>
