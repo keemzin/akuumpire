@@ -546,6 +546,22 @@ function renderReplaySnapshot(frame) {
     statusBadgeEl.textContent = "🎬 REPLAY";
   }
 
+  const isWinnerA = Boolean(frame.isMatchEnd && frame.winner === "A");
+  const isWinnerB = Boolean(frame.isMatchEnd && frame.winner === "B");
+
+  const teamAName = document.getElementById("disp-team-a-name");
+  const teamBName = document.getElementById("disp-team-b-name");
+  if (teamAName) {
+    teamAName.innerHTML = isWinnerA 
+      ? `${escapeHtml(currentMatchData.teamA.name)} <span class="winner-stadium-badge">🏆 WINNER</span>`
+      : escapeHtml(currentMatchData.teamA.name);
+  }
+  if (teamBName) {
+    teamBName.innerHTML = isWinnerB 
+      ? `<span class="winner-stadium-badge">🏆 WINNER</span> ${escapeHtml(currentMatchData.teamB.name)}`
+      : escapeHtml(currentMatchData.teamB.name);
+  }
+
   // Scores
   if (scoreAEl) {
     if (Number(scoreAEl.textContent) !== frame.currentScore.teamA) {
@@ -571,19 +587,19 @@ function renderReplaySnapshot(frame) {
   }
 
   // Serving
-  const isServingA = frame.servingTeam === "A";
-  const isServingB = frame.servingTeam === "B";
+  const isServingA = frame.servingTeam === "A" && !frame.isMatchEnd;
+  const isServingB = frame.servingTeam === "B" && !frame.isMatchEnd;
   if (servingAEl) servingAEl.classList.toggle("active", isServingA);
   if (servingBEl) servingBEl.classList.toggle("active", isServingB);
   if (panelA) {
     panelA.classList.toggle("serving", isServingA);
-    panelA.classList.toggle("winner-panel", frame.isMatchEnd && frame.winner === "A");
-    panelA.classList.toggle("defeated-panel", frame.isMatchEnd && frame.winner === "B");
+    panelA.classList.toggle("winner-panel", isWinnerA);
+    panelA.classList.toggle("defeated-panel", isWinnerB);
   }
   if (panelB) {
     panelB.classList.toggle("serving", isServingB);
-    panelB.classList.toggle("winner-panel", frame.isMatchEnd && frame.winner === "B");
-    panelB.classList.toggle("defeated-panel", frame.isMatchEnd && frame.winner === "A");
+    panelB.classList.toggle("winner-panel", isWinnerB);
+    panelB.classList.toggle("defeated-panel", isWinnerA);
   }
 
   // Sets Won & History
