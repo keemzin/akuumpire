@@ -43,51 +43,66 @@
   gap: 0.6rem;
 }
 
-/* Banner for Game / Match point / Interval */
+/* Banner for Game / Match point / Interval (Broadcast Top Ribbon Overlay) */
 .status-banner {
-  padding: 0.75rem 1.5rem;
-  border-radius: var(--radius-md);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 15;
+  padding: 0.5rem 1.5rem;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  border: none;
+  border-bottom: 1px solid var(--border-medium);
   text-align: center;
   font-weight: 800;
-  font-size: 1.1rem;
+  font-size: 0.9rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  display: none;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease;
   animation: pulse-banner 2s infinite ease-in-out;
 }
 
 .status-banner.active {
-  display: block;
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .status-banner.match-point {
-  background: linear-gradient(90deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.4), rgba(245, 158, 11, 0.2));
-  border: 1px solid var(--accent-gold);
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.22), rgba(245, 158, 11, 0.45), rgba(245, 158, 11, 0.22));
+  border-bottom: 1px solid var(--accent-gold);
   color: #fef08a;
   box-shadow: var(--shadow-glow-gold);
 }
 
 .status-banner.game-point {
-  background: linear-gradient(90deg, rgba(6, 182, 212, 0.2), rgba(6, 182, 212, 0.4), rgba(6, 182, 212, 0.2));
-  border: 1px solid var(--accent-cyan);
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.22), rgba(6, 182, 212, 0.45), rgba(6, 182, 212, 0.22));
+  border-bottom: 1px solid var(--accent-cyan);
   color: #cffafe;
 }
 
 .status-banner.interval {
-  background: linear-gradient(90deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.4), rgba(139, 92, 246, 0.2));
-  border: 1px solid var(--accent-purple);
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.22), rgba(139, 92, 246, 0.45), rgba(139, 92, 246, 0.22));
+  border-bottom: 1px solid var(--accent-purple);
   color: #e9d5ff;
 }
 
 .status-banner.deuce {
-  background: linear-gradient(90deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.4), rgba(239, 68, 68, 0.2));
-  border: 1px solid var(--accent-crimson);
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.22), rgba(239, 68, 68, 0.45), rgba(239, 68, 68, 0.22));
+  border-bottom: 1px solid var(--accent-crimson);
   color: #fca5a5;
 }
 
 .status-banner.finished {
-  background: linear-gradient(90deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.4), rgba(34, 197, 94, 0.2));
-  border: 1px solid var(--accent-lime);
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.22), rgba(34, 197, 94, 0.45), rgba(34, 197, 94, 0.22));
+  border-bottom: 1px solid var(--accent-lime);
   color: #86efac;
   box-shadow: var(--shadow-glow-lime);
 }
@@ -129,11 +144,14 @@
   .court-sides-container {
     grid-template-columns: 1fr;
   }
+  .team-panel {
+    padding: 2.75rem 1.25rem 2rem 1.25rem;
+  }
 }
 
 /* Team Panel */
 .team-panel {
-  padding: 2.5rem 2rem;
+  padding: 2.75rem 2rem 2.5rem 2rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
