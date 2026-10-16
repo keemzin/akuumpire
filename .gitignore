@@ -6,3 +6,4 @@ data/matches.json
 .env.local
 public/uploads/
 sampahjer/
+.playwright-mcp/

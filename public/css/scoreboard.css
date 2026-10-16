@@ -8,39 +8,59 @@
   gap: 1.5rem;
 }
 
-/* Header bar above scoreboard */
-.scoreboard-top-bar {
+/* Integrated Stadium Header Strip (Court, Venue, Category & Status) */
+.stadium-header-strip {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
-  padding: 0.5rem 0;
+  padding: 0.65rem 1.4rem;
+  background: rgba(15, 23, 42, 0.7);
+  border-bottom: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  font-size: 0.85rem;
+  line-height: 1.2;
 }
 
-.match-venue-pill {
+.strip-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.strip-court {
+  font-weight: 800;
+  color: var(--accent-lime);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+
+.strip-dot {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.strip-venue {
+  color: var(--text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.strip-right {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: var(--bg-card);
-  padding: 0.4rem 1rem;
-  border-radius: var(--radius-full);
-  border: 1px solid var(--border-subtle);
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+  flex-shrink: 0;
 }
 
-.court-title {
-  color: var(--accent-lime);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.match-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
+.strip-type {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
 }
 
 /* Banner for Game / Match point / Interval (Broadcast Top Ribbon Overlay) */
@@ -138,15 +158,6 @@
   grid-template-columns: 1fr 140px 1fr;
   align-items: stretch;
   min-height: 380px;
-}
-
-@media (max-width: 850px) {
-  .court-sides-container {
-    grid-template-columns: 1fr;
-  }
-  .team-panel {
-    padding: 2.75rem 1.25rem 2rem 1.25rem;
-  }
 }
 
 /* Team Panel */
@@ -427,13 +438,123 @@
   gap: 1.5rem;
 }
 
+/* High-Density Mobile Scoreboard (More Viewing, Less Scrolling!) */
 @media (max-width: 850px) {
+  .container {
+    padding: 0.5rem 0.65rem 2rem;
+  }
+
+  .scoreboard-stage {
+    gap: 0.35rem;
+  }
+
+  .stadium-header-strip {
+    padding: 0.45rem 0.85rem;
+  }
+
+  .strip-court {
+    font-size: 0.8rem;
+  }
+
+  .strip-venue {
+    max-width: 130px;
+    font-size: 0.8rem;
+  }
+
+  .strip-type {
+    display: none;
+  }
+
+  .court-sides-container {
+    display: flex;
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  #panel-team-a {
+    order: 1;
+    padding: 0.85rem 0.95rem 0.65rem;
+  }
+
+  #panel-team-b {
+    order: 2;
+    padding: 0.85rem 0.95rem 0.65rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
   .center-column {
+    order: 3;
     border: none;
     border-top: 1px solid var(--border-subtle);
-    border-bottom: 1px solid var(--border-subtle);
-    flex-direction: row;
-    justify-content: space-around;
+    padding: 0.65rem 0.95rem;
+    background: rgba(0, 0, 0, 0.35);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  }
+
+  .center-column .current-set-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .current-set-label .set-num {
+    font-size: 1.5rem;
+  }
+
+  .team-names {
+    font-size: 1.2rem;
+    margin-bottom: 0.15rem;
+    line-height: 1.2;
+  }
+
+  .score-digit {
+    font-size: clamp(2.8rem, 13vw, 3.8rem);
+  }
+
+  .score-row-wrapper {
+    margin: 0.15rem 0 0.35rem;
+    gap: 0.75rem;
+  }
+
+  .stadium-logo-badge {
+    height: 44px;
+    max-width: 120px;
+  }
+}
+
+@media (max-width: 600px) {
+  .navbar {
+    padding: 0.5rem 0.65rem;
+    gap: 0.35rem;
+  }
+
+  .nav-actions {
+    gap: 0.25rem;
+  }
+
+  /* Icon-only utility buttons on small mobile screens to keep navbar spacious and uncrowded */
+  #open-replay-btn span:last-child,
+  #share-btn span:last-child,
+  #fullscreen-btn span:last-child {
+    display: none;
+  }
+
+  #open-replay-btn,
+  #share-btn,
+  #fullscreen-btn {
+    padding: 0 0.5rem;
+    min-width: 32px;
+    justify-content: center;
+  }
+
+  #umpire-auth-btn {
+    padding: 0 0.55rem;
+    font-size: 0.78rem;
   }
 }
 

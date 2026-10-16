@@ -15,7 +15,7 @@
   <header class="navbar">
     <a href="/" class="brand">
       <div class="brand-icon">🏸</div>
-      <span>Shuttle<span style="color: var(--accent-lime);">Live</span></span>
+      <span class="brand-text">Shuttle<span style="color: var(--accent-lime);">Live</span></span>
     </a>
     <div class="nav-actions">
       <button class="btn btn-secondary" id="open-replay-btn" style="display: none;" title="Simulate Match Replay">
@@ -39,24 +39,23 @@
 
   <main class="container">
     <div class="scoreboard-stage">
-      <!-- Top info bar -->
-      <div class="scoreboard-top-bar">
-        <div class="match-venue-pill">
-          <span class="court-title" id="disp-court">Court</span>
-          <span>•</span>
-          <span id="disp-venue">Venue</span>
-          <span>•</span>
-          <span class="badge badge-live" id="disp-status-badge">Live</span>
-        </div>
-        <div>
-          <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;" id="disp-type">Category</span>
-        </div>
-      </div>
-
       <!-- Main Stadium LED Display -->
       <div class="stadium-display">
         <!-- Game Point / Match Point / Interval Banner (Broadcast Ribbon Overlay) -->
         <div class="status-banner" id="status-banner"></div>
+
+        <!-- Integrated Stadium Header Strip (Court, Venue, Category & Live Status) -->
+        <div class="stadium-header-strip">
+          <div class="strip-left">
+            <span class="strip-court" id="disp-court">Court</span>
+            <span class="strip-dot">•</span>
+            <span class="strip-venue" id="disp-venue">Venue</span>
+          </div>
+          <div class="strip-right">
+            <span class="strip-type" id="disp-type">MD</span>
+            <span class="badge badge-live" id="disp-status-badge">Live</span>
+          </div>
+        </div>
 
         <div class="court-sides-container">
           <!-- Team A Panel -->

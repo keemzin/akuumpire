@@ -73,22 +73,30 @@ function renderScoreboard(match) {
   if (venueEl) venueEl.textContent = match.venue;
   if (typeEl) typeEl.textContent = `${match.matchType} • ${formatTag}`;
 
-  // Header status badge
-  if (statusBadgeEl) {
+  const courtNavEl = document.getElementById("disp-court-nav");
+  if (courtNavEl) courtNavEl.textContent = match.court;
+
+  // Header status badge (Desktop + Mobile Navbar)
+  const statusBadgeNavEl = document.getElementById("disp-status-badge-nav");
+  const updateBadge = (el) => {
+    if (!el) return;
     if (isAbandoned) {
-      statusBadgeEl.className = "badge badge-abandoned";
-      statusBadgeEl.textContent = "Abandoned";
+      el.className = "badge badge-abandoned";
+      el.textContent = "Abandoned";
     } else if (isFinished) {
-      statusBadgeEl.className = "badge badge-gold";
-      statusBadgeEl.textContent = "Ended";
+      el.className = "badge badge-gold";
+      el.textContent = "Ended";
     } else if (match.status === "INTERVAL") {
-      statusBadgeEl.className = "badge badge-gold";
-      statusBadgeEl.textContent = "Interval";
+      el.className = "badge badge-gold";
+      el.textContent = "Interval";
     } else {
-      statusBadgeEl.className = "badge badge-live";
-      statusBadgeEl.textContent = "Live";
+      el.className = "badge badge-live";
+      el.textContent = "Live";
     }
-  }
+  };
+
+  updateBadge(statusBadgeEl);
+  updateBadge(statusBadgeNavEl);
 
   // Toggle Replay Button in Navbar
   const openReplayBtn = document.getElementById("open-replay-btn");
@@ -562,10 +570,15 @@ function renderReplaySnapshot(frame) {
   const panelB = document.getElementById("panel-team-b");
   const banner = document.getElementById("status-banner");
 
-  // Replay Badge in Header
+  // Replay Badge in Header (Desktop + Mobile Navbar)
+  const statusBadgeNavEl = document.getElementById("disp-status-badge-nav");
   if (statusBadgeEl) {
     statusBadgeEl.className = "badge badge-cyan";
     statusBadgeEl.textContent = "🎬 REPLAY";
+  }
+  if (statusBadgeNavEl) {
+    statusBadgeNavEl.className = "badge badge-cyan";
+    statusBadgeNavEl.textContent = "🎬 REPLAY";
   }
 
   const isWinnerA = Boolean(frame.isMatchEnd && frame.winner === "A");
